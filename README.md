@@ -179,12 +179,13 @@ json:api allows for additional information to be stored at objects and relations
   },
   "data": [{
   	  "id" : "1",
-	  "type": "articles"
+	  "type": "articles",
 	  "attributes": {
 	  	  "title": "document root example"
 	  }
   }]
 }
+```
 
 ```csharp
 DocumentRoot<Article[]> articlesRoot = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
