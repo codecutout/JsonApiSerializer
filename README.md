@@ -115,6 +115,7 @@ Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiS
 
 We can also generate the JSON from our object model
 ```csharp
+
 var author = new Person
 {
     Id = "9",
@@ -129,30 +130,26 @@ var articles = new[] {
         Id = "1",
         Title = "JSON API paints my bikeshed!",
         Author = author,
-        Comments = new Relationship<List<Comment>>
+        Comments = new List<Comment>
         {
-            Data = new List<Comment>
+            new Comment
             {
-                new Comment
+                Id = "5",
+                Body = "First!",
+                Author = new Person
                 {
-                    Id = "5",
-                    Body = "First!",
-                    Author = new Person
-                    {
-                        Type = "people",
-                        Id = "2"
-                    },
+                    Id = "2"
                 },
-                new Comment
-                {
-                    Id = "12",
-                    Body = "I like XML better",
-                    Author = author,
-                }
+            },
+            new Comment
+            {
+                Id = "12",
+                Body = "I like XML better",
+                Author = author,
             }
         }
     }
-}
+};
 
 //will produce the same json:api json value
 string json = JsonConvert.SerializeObject(articles, new JsonApiSerializerSettings());
