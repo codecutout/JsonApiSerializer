@@ -188,7 +188,7 @@ json:api allows for additional information to be stored at objects and relations
 ```
 
 ```csharp
-DocumentRoot<Article[]> articlesRoot = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
+DocumentRoot<Article[]> articlesRoot = JsonConvert.DeserializeObject<DocumentRoot<Article[]>>(json, new JsonApiSerializerSettings());
 Assert.Equal("1.0" articlesRoot.JsonApi.Version);
 Assert.Equal("http://example.com/articles", articlesRoot.Links["self"].Href);
 Assert.Equal("2017-04-02T23:28:35", articlesRoot.Meta["self"]["created"]);
