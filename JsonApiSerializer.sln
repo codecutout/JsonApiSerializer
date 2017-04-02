@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonApiSerializer", "src\JsonApiSerializer\JsonApiSerializer.csproj", "{3CFAD26B-A705-4180-A210-E0B7BBDF6404}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonApiSerializer.Test", "tests\JsonApiSerializer.Test\JsonApiSerializer.Test.csproj", "{ACED8723-0D2D-40E1-9E92-C0E755A60F3A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2CC10E19-7EEE-4E16-8473-89BB78642787}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{32D2F3FF-275C-4CD1-ABBE-9D3865DFC297}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution", "solution", "{52EDA15C-678C-4F6B-A58B-2FF9F26B5B84}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{B7D2D1A6-3214-4749-9DAA-D2785B62C4E9}"
+	ProjectSection(SolutionItems) = preProject
+		build\package.bat = build\package.bat
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3CFAD26B-A705-4180-A210-E0B7BBDF6404}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3CFAD26B-A705-4180-A210-E0B7BBDF6404}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3CFAD26B-A705-4180-A210-E0B7BBDF6404}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CFAD26B-A705-4180-A210-E0B7BBDF6404}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACED8723-0D2D-40E1-9E92-C0E755A60F3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACED8723-0D2D-40E1-9E92-C0E755A60F3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACED8723-0D2D-40E1-9E92-C0E755A60F3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACED8723-0D2D-40E1-9E92-C0E755A60F3A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3CFAD26B-A705-4180-A210-E0B7BBDF6404} = {2CC10E19-7EEE-4E16-8473-89BB78642787}
+		{ACED8723-0D2D-40E1-9E92-C0E755A60F3A} = {32D2F3FF-275C-4CD1-ABBE-9D3865DFC297}
+	EndGlobalSection
+EndGlobal
