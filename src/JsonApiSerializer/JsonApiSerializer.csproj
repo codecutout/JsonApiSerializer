@@ -8,6 +8,7 @@
     <Description>JsonApiSerializer supports configurationless serializing and deserializing objects into the json:api format (http://jsonapi.org).</Description>
     <PackageLicenseUrl>https://github.com/codecutout/JsonApiSerializer/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/codecutout/JsonApiSerializer</PackageProjectUrl>
+    <PackageTags>jsonapiserializer jsonapi json:api json.net serialization deserialization</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
