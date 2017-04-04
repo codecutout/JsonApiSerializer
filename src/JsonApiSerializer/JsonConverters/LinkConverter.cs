@@ -1,10 +1,12 @@
 ﻿using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonApi.WellKnown;
+using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,7 +16,7 @@ namespace JsonApiSerializer.JsonConverters
     {
         public static bool CanConvertStatic(Type objectType)
         {
-            return objectType.GetInterfaces().Any(x => x == typeof(ILink));
+            return typeof(ILink).GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo());
         }
 
         public override bool CanConvert(Type objectType)

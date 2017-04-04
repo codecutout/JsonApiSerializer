@@ -21,7 +21,8 @@ namespace JsonApiSerializer
     {
         public override bool CanConvert(Type objectType)
         {
-            return objectType.GetProperty("id", BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance) != null;
+            return TypeInfoShim.GetProperty(objectType.GetTypeInfo(), "Id") != null;
+            
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)

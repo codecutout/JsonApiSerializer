@@ -1,1 +1,1 @@
-..\.nuget\nuget.exe pack ..\src\JsonApiSerializer\JsonApiSerializer.csproj -Build -Prop Configuration=Release -OutputDirectory ..\artifacts
+dotnet pack ..\src\JsonApiSerializer\JsonApiSerializer.csproj --configuration=Release --output ../../artifacts

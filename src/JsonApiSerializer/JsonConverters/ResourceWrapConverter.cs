@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -44,7 +45,7 @@ namespace JsonApiSerializer.JsonConverters
                 var resolved = serializer.ReferenceResolver.ResolveReference(null, key);
 
                 //we may have already resolved this to a full object, if we have we dont need to do any more
-                if (resolved != null && objectType.IsAssignableFrom(resolved.GetType()))
+                if (resolved != null && objectType.GetTypeInfo().IsAssignableFrom(resolved.GetType().GetTypeInfo()))
                     return resolved;
 
                 //we may have this object as a JObject, if so we will use that as our data and resolve it fully

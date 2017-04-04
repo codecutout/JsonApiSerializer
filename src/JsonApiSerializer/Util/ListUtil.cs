@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -25,11 +26,12 @@ namespace JsonApiSerializer.Util
                 return true;
             }
 
-            if (type.IsGenericType)
+            var typeInfo = type.GetTypeInfo();
+            if (typeInfo.IsGenericType)
             {
-                var listType = type.GetGenericTypeDefinition();
-                elementType = type.GetGenericArguments()[0];
-                if (typeof(IEnumerable<>).MakeGenericType(elementType).IsAssignableFrom(type))
+                var listType = typeInfo.GetGenericTypeDefinition();
+                elementType = typeInfo.GenericTypeArguments[0];
+                if (typeof(IEnumerable<>).MakeGenericType(elementType).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()))
                     return true;
             }
 
@@ -64,7 +66,7 @@ namespace JsonApiSerializer.Util
 
             //if the type can be satisfied with a list we will create a list
             var concreteListType = typeof(List<>).MakeGenericType(elementType);
-            if (listType.IsAssignableFrom(concreteListType))
+            if (listType.GetTypeInfo().IsAssignableFrom(concreteListType.GetTypeInfo()))
             {
                 var list = (IList)Activator.CreateInstance(concreteListType);
                 foreach (var element in elements)

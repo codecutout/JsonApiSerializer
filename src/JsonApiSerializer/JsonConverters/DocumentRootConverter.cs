@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,8 +19,9 @@ namespace JsonApiSerializer.JsonConverters
     {
         public static bool CanConvertStatic(Type objectType)
         {
-            return objectType.GetInterfaces().Any(x => x.IsGenericType
-                && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
+            return TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
+                .Select(x=>x.GetTypeInfo())
+                .Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
         }
 
         public override bool CanConvert(Type objectType)
@@ -66,9 +68,11 @@ namespace JsonApiSerializer.JsonConverters
             //now the included are processed we can process the data
             if(dataJObj != null)
             {
-                var documentRootInterfaceType = objectType.GetInterfaces().FirstOrDefault(x =>
-                    x.IsGenericType
-                    && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
+                var documentRootInterfaceType = TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
+                    .Select(x=>x.GetTypeInfo())
+                    .FirstOrDefault(x =>
+                        x.IsGenericType
+                        && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
 
                 var dataType = documentRootInterfaceType.GenericTypeArguments[0];
                 var data = serializer.Deserialize(dataJObj, dataType);

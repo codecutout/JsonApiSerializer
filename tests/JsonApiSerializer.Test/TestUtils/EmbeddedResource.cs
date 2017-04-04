@@ -12,7 +12,7 @@ namespace JsonApiSerializer.Test.TestUtils
     {
         public static string Read(string file)
         {
-            var assembly = Assembly.GetExecutingAssembly();
+            var assembly = typeof(EmbeddedResource).GetTypeInfo().Assembly;
             var resourceName = string.Join(".", nameof(JsonApiSerializer), nameof(Test), file);
 
             using (Stream stream = assembly.GetManifestResourceStream(resourceName))
