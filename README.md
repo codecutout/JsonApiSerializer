@@ -165,22 +165,22 @@ json:api allows for additional information to be stored at objects and relations
 
 ```json
 {
-  "jsonapi": {
-	"version":"1.0"
-  },
-  "links": {
-    "self": "http://example.com/articles",
-  },
-  "meta": {
-	"created": "2017-04-02T23:28:35"
-  },
-  "data": [{
-  	  "id" : "1",
-	  "type": "articles",
-	  "attributes": {
-	  	  "title": "document root example"
-	  }
-  }]
+	"jsonapi": {
+		"version":"1.0"
+	},
+	"links": {
+		"self": "http://example.com/articles",
+	},
+	"meta": {
+		"created": "2017-04-02T23:28:35"
+	},
+	"data": [{
+  		"id" : "1",
+		"type": "articles",
+		"attributes": {
+	  		"title": "document root example"
+		}
+	}]
 }
 ```
 
@@ -193,7 +193,45 @@ Assert.Equal("2017-04-02T23:28:35", articlesRoot.Meta["self"]["created"]);
 
 ### Relationships
 
-`Relationship<TData>` can be used in an object to get and set additional json:api around relationships
+`Relationship<TData>` can be used in an object to get and set additional json:api around relationships such as links or meta
+
+```json
+{
+	"data": [{
+		"type": "articles",
+		"id": "1",
+		"attributes": {
+			"title": "JSON API paints my bikeshed!"
+		},
+		"relationships": {
+			"author": {
+				"links": {
+				  "self": "http://example.com/articles/1/relationships/author",
+				  "related": "http://example.com/articles/1/author"
+				},
+				"data": { "type": "people", "id": "9" }
+			}
+		}
+	}]
+}
+```
+
+```csharp
+public class Article
+{
+    public string Id { get; set; }
+
+    public string Title { get; set; }
+
+    public Relationship<Person> Author { get; set; }
+}
+```
+
+```csharp
+Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
+Assert.Equal("http://example.com/articles/1/relationships/author", articles[0].links["self"].Href);
+Assert.Equal("http://example.com/articles/1/author", articles[0].links["related"].Href);
+```
 
 ### Links
 
@@ -222,3 +260,12 @@ public class Person
 }
 ```
 
+### Determining relationship objects
+By default any class with an "Id" is considered an Resource Object, and it will be treated as a relationship during serialization and deserialization.
+
+This can be overrided during initialization by providing your own `JsonConverter` (it is strongly recommneded you extend `ResourceObjectConverter`) when you create the `JsonApiSerializerSettings`. Your custom 'JsonConverter can override the `CanConvert(Type type)' method.
+
+```csharp
+var settings = new JsonApiSerializerSettings(new MyOwnJsonSerializer())
+Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, settings);
+```
