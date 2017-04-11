@@ -92,6 +92,26 @@ namespace JsonApiSerializer.Test.DeserializationTests
             AssertArticlesMatchData(articlesRoot.Data);
         }
 
+        [Fact]
+        public void When_single_item_should_deserialize()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.single-item.json");
+
+            var article = JsonConvert.DeserializeObject<Article>(json, new JsonApiSerializerSettings());
+
+            AssertArticlesMatchData(new[] {article });
+        }
+
+        [Fact]
+        public void When_single_item_treated_as_array_should_deserialize_as_single_element_array()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.single-item.json");
+
+            var articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
+
+            AssertArticlesMatchData(articles);
+        }
+
 
 
         private void AssertArticlesMatchData<T>(DocumentRoot<T> articleRoot) where T : IEnumerable<Article>

@@ -39,7 +39,9 @@ namespace JsonApiSerializer.JsonConverters
 
             using (ResourceWrapConverter.MoveToDataElement(reader))
             {
-                var jobj = serializer.Deserialize<JObject>(reader);
+                var jobj = serializer.Deserialize<JToken>(reader) as JObject;
+                if (jobj == null)
+                    return null;
 
                 var key = IncludedReferenceResolver.GetReferenceValue(jobj);
                 var resolved = serializer.ReferenceResolver.ResolveReference(null, key);
@@ -151,8 +153,7 @@ namespace JsonApiSerializer.JsonConverters
         internal static IDisposable MoveToDataElement(JsonReader reader)
         {
             var startPath = reader.Path;
-            reader.ReadUntil(r => _dataReadPath.IsMatch(r.Path)
-                && (r.TokenType == JsonToken.StartObject || r.TokenType == JsonToken.StartArray));
+            reader.ReadUntil(r => _dataReadPath.IsMatch(r.Path) && r.TokenType != JsonToken.PropertyName);
 
             return new ActionDisposable(() => reader.ReadUntil(r => r.Path == startPath
                 && (r.TokenType == JsonToken.EndObject || r.TokenType == JsonToken.EndArray)));

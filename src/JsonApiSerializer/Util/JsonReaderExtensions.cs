@@ -45,15 +45,28 @@ namespace JsonApiSerializer.Util
         /// <exception cref="System.ArgumentException">When reader is not at the start of an array</exception>
         public static IEnumerable<object> IterateList(this JsonReader reader)
         {
-            if (reader.TokenType != JsonToken.StartArray)
-                throw new ArgumentException($"{nameof(reader)} must be at the start of an array", nameof(reader));
+         
 
-            while (reader.Read())
+            if (reader.TokenType == JsonToken.StartArray)
             {
-                if (reader.TokenType == JsonToken.EndArray)
-                    yield break;
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonToken.EndArray)
+                        yield break;
 
+                    yield return reader.Value;
+                }
+            }
+            else if(reader.TokenType == JsonToken.None || reader.TokenType == JsonToken.Null || reader.TokenType == JsonToken.Undefined)
+            {
+                //we dont have a value so return empty array
+                yield break;
+            }
+            else
+            {
+                //are a value, we will return the items as though its a list with just that item
                 yield return reader.Value;
+                yield break;
             }
         }
 

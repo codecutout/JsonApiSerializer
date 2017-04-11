@@ -45,5 +45,18 @@ namespace JsonApiSerializer.Test.DeserializationTests
             Assert.Equal("First!", comments[0].Body);
             Assert.Equal("I like XML better", comments[1].Body);
         }
+
+        [Fact]
+        public void When_null_should_return_as_or_empty_list()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.author-comments-null.json");
+
+            var articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
+            var article = articles[0];
+            Assert.Equal(null, article.Author);
+            Assert.Equal(0, article.Comments.Count);
+        }
+
+
     }
 }

@@ -31,7 +31,6 @@ namespace JsonApiSerializer.Util
 
             reader.Read(); //move to property value
 
-            var thisId = new Object().GetHashCode();
             var value = serializer.Deserialize(reader, prop.PropertyType);
             prop.ValueProvider.SetValue(obj, value);
             return value;

@@ -1,9 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>net462</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Data\Journeys\**" />
+    <EmbeddedResource Remove="Data\Journeys\**" />
+    <None Remove="Data\Journeys\**" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="Data\Articles\sample.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\Articles\author-comments-null.json" />
+    <EmbeddedResource Include="Data\Articles\single-item.json" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\Articles\sample.json" />
