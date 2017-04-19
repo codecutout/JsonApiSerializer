@@ -3,11 +3,6 @@
     <TargetFramework>net462</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Data\Journeys\**" />
-    <EmbeddedResource Remove="Data\Journeys\**" />
-    <None Remove="Data\Journeys\**" />
-  </ItemGroup>
-  <ItemGroup>
     <None Remove="Data\Articles\sample.json" />
   </ItemGroup>
   <ItemGroup>
@@ -18,6 +13,7 @@
     <EmbeddedResource Include="Data\Articles\sample.json" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="AutoFixture" Version="3.50.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="xunit" Version="2.2.0" />

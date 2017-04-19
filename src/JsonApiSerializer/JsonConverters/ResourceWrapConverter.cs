@@ -149,7 +149,7 @@ namespace JsonApiSerializer.JsonConverters
             }
         }
 
-        private static Regex _dataReadPath = new Regex($@"(^$)|(^\[\d\]$)|({PropertyNames.Data}(\[\d\])?$)");
+        private static Regex _dataReadPath = new Regex($@"(^$)|(^\[\d+\]$)|({PropertyNames.Data}(\[\d+\])?$)");
         internal static IDisposable MoveToDataElement(JsonReader reader)
         {
             var startPath = reader.Path;
@@ -159,7 +159,7 @@ namespace JsonApiSerializer.JsonConverters
                 && (r.TokenType == JsonToken.EndObject || r.TokenType == JsonToken.EndArray)));
         }
 
-        private static Regex _dataWritePath = new Regex($@"({PropertyNames.Included}(\[\d\])?$)|({PropertyNames.Data}(\[\d\])?$)");
+        private static Regex _dataWritePath = new Regex($@"({PropertyNames.Included}(\[\d+\])?$)|({PropertyNames.Data}(\[\d+\])?$)");
         internal static IDisposable MoveToDataElement(JsonWriter writer)
         {
             if (!_dataWritePath.IsMatch(writer.Path))
