@@ -8,13 +8,13 @@ It is implemented as an `JsonSerializerSettings` for [Json.Net](http://www.newto
 //To serialize a POCO in json:api format
 string json = JsonConvert.SerializeObject(articles, new JsonApiSerializerSettings());
 
-//To desserialize to a POCO from json:api format
+//To deserialize to a POCO from json:api format
 Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
 ```
 
 ## Example
 
-Given an object model like This
+Given an object model like:
 
 ```csharp
 public class Article
@@ -107,7 +107,7 @@ and json:api content that look something like
 }
 ```
 
-We can desialize with 
+We can deserialize with 
 
 ```csharp
 Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
@@ -261,7 +261,7 @@ public class Person
 ```
 
 ### Determining relationship objects
-By default any class with an "Id" is considered an Resource Object, and it will be treated as a relationship during serialization and deserialization.
+By default any class with an "Id" is considered a Resource Object, and it will be treated as a relationship during serialization and deserialization.
 
 This can be overrided during initialization by providing your own `JsonConverter` (it is strongly recommneded you extend `ResourceObjectConverter`) when you create the `JsonApiSerializerSettings`. Your custom 'JsonConverter can override the `CanConvert(Type type)' method.
 
