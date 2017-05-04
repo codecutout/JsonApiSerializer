@@ -15,15 +15,12 @@ namespace JsonApiSerializer
     {
         public readonly JsonConverter ResourceObjectConverter;
 
-        private readonly JsonConverter _resourceWrapConverter;
-
-        private readonly JsonConverter _resourceListWrapConverter;
+        private readonly JsonConverter _resourceObjectListConverter;
 
         public JsonApiContractResolver(JsonConverter resourceObjectConverter)
         {
             ResourceObjectConverter = resourceObjectConverter;
-            _resourceWrapConverter = new ResourceWrapConverter(ResourceObjectConverter);
-            _resourceListWrapConverter = new ResourceListWrapConverter(ResourceObjectConverter);
+            _resourceObjectListConverter = new ResourceObjectListConverter(ResourceObjectConverter);
 
             this.NamingStrategy = new CamelCaseNamingStrategy();
         }
@@ -35,11 +32,11 @@ namespace JsonApiSerializer
 
         protected override JsonConverter ResolveContractConverter(Type objectType)
         {
-            if (_resourceWrapConverter.CanConvert(objectType))
-                return _resourceWrapConverter;
+            if (ResourceObjectConverter.CanConvert(objectType))
+                return ResourceObjectConverter;
 
-            if (_resourceListWrapConverter.CanConvert(objectType))
-                return _resourceListWrapConverter;
+            if (_resourceObjectListConverter.CanConvert(objectType))
+                return _resourceObjectListConverter;
 
             if (LinkConverter.CanConvertStatic(objectType))
                 return new LinkConverter();

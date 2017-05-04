@@ -112,6 +112,19 @@ namespace JsonApiSerializer.Test.DeserializationTests
             AssertArticlesMatchData(articles);
         }
 
+        [Fact]
+        public void When_json_order_unconventional_should_deserialize()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.sample-out-of-order.json");
+
+            var settings = new JsonApiSerializerSettings();
+            var articles = JsonConvert.DeserializeObject<Article[]>(
+                json,
+                new JsonApiSerializerSettings());
+
+            AssertArticlesMatchData(articles);
+        }
+
 
 
         private void AssertArticlesMatchData<T>(DocumentRoot<T> articleRoot) where T : IEnumerable<Article>

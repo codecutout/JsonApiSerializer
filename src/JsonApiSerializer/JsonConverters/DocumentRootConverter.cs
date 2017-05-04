@@ -31,54 +31,44 @@ namespace JsonApiSerializer.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+            reader = new ForkableJsonReader(reader);
+
             var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
             var rootObject = contract.DefaultCreator();
             serializer.ReferenceResolver.AddReference(null, IncludedReferenceResolver.RootReference, rootObject);
 
             JToken dataJObj = null;
-            foreach (var prop in reader.IterateProperties())
+            var includedConverter = new IncludedConverter();
+
+            foreach (var propName in ReaderUtil.IterateProperties(reader))
             {
-                switch (prop)
+                switch (propName)
                 {
                     case PropertyNames.Data:
                         //we cant process the data object until all the included is done, so we will
                         //store it in a JObject to process later
-                        reader.Read();
-                        dataJObj = serializer.Deserialize<JToken>(reader);
+                        var documentRootInterfaceType = TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
+                            .Select(x => x.GetTypeInfo())
+                            .FirstOrDefault(x =>
+                                x.IsGenericType
+                                && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
+
+                        var dataType = documentRootInterfaceType.GenericTypeArguments[0];
+
+                        var dataObj = serializer.Deserialize(reader, dataType);
+                        contract.Properties.GetClosestMatchProperty(PropertyNames.Data).ValueProvider.SetValue(rootObject, dataObj);
                         break;
                     case PropertyNames.Included:
-                        var includedList = serializer.PopulateProperty(reader, rootObject, contract);
-                        if(includedList == null)
+                        foreach (var obj in ReaderUtil.IterateList(reader))
                         {
-                            reader.Read();
-                            includedList = serializer.Deserialize<IEnumerable<JObject>>(reader);
-                        }
-
-                        foreach (JObject include in includedList as IEnumerable<JObject>  ?? Enumerable.Empty<JObject>())
-                        {
-                            serializer.ReferenceResolver.AddReference(null, IncludedReferenceResolver.GetReferenceValue(include), include);
+                            var includedObject = includedConverter.ReadJson(reader, typeof(object), null, serializer);
                         }
                         break;
                     default:
-                        serializer.PopulateProperty(reader, rootObject, contract);
+                        ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), reader);
                         break;
                 }
             }
-
-            //now the included are processed we can process the data
-            if(dataJObj != null)
-            {
-                var documentRootInterfaceType = TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
-                    .Select(x=>x.GetTypeInfo())
-                    .FirstOrDefault(x =>
-                        x.IsGenericType
-                        && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
-
-                var dataType = documentRootInterfaceType.GenericTypeArguments[0];
-                var data = serializer.Deserialize(dataJObj, dataType);
-                contract.Properties.GetClosestMatchProperty(PropertyNames.Data).ValueProvider.SetValue(rootObject, data);
-            }
-
             return rootObject;
         }
 
@@ -132,7 +122,7 @@ namespace JsonApiSerializer.JsonConverters
                 var includedValues = includedProperty?.ValueProvider?.GetValue(value) as IEnumerable<object> ?? Enumerable.Empty<object>();
 
                 //if we have some references we will output them
-                if (includedReferences.Any() || includedReferences.Any())
+                if (includedReferences.Any())
                 {
                     writer.WritePropertyName(PropertyNames.Included);
                     writer.WriteStartArray();
@@ -150,5 +140,54 @@ namespace JsonApiSerializer.JsonConverters
 
             writer.WriteEndObject();
         }
+
+        internal static bool TryResolveAsRoot(JsonReader reader, Type objectType, JsonSerializer serializer, out object obj)
+        {
+            //if we already have a root object then we dont need to resolve the root object
+            if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
+            {
+                obj = null;
+                return false;
+            }
+
+            //we do not have a root object, so this is probably the entry point, so we will resolve
+            //a document root and return the data object
+            var documentRootType = typeof(MinimalDocumentRoot<>).MakeGenericType(objectType);
+            var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
+            var dataProp = objContract.Properties.GetClosestMatchProperty("data");
+
+            var root = serializer.Deserialize(reader, documentRootType);
+            obj = dataProp.ValueProvider.GetValue(root);
+            return true;
+        }
+
+        internal static bool TryResolveAsRoot(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            //if we already have a root object then we dont need to resolve the root object
+            if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
+            {
+                return false;
+            }
+
+            //we do not have a root object, so this is probably the entry point, so we will resolve
+            //it as a document root
+            var documentRootType = typeof(MinimalDocumentRoot<>).MakeGenericType(value.GetType());
+            var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
+            var rootObj = objContract.DefaultCreator();
+
+            //set the data property to be our current object
+            var dataProp = objContract.Properties.GetClosestMatchProperty("data");
+            dataProp.ValueProvider.SetValue(rootObj, value);
+
+            serializer.Serialize(writer, rootObj);
+            return true;
+        }
+
+        private class MinimalDocumentRoot<T> : IDocumentRoot<T>
+        {
+            public T Data { get; set; }
+        }
+
     }
+
 }

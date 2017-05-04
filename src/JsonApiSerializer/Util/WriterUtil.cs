@@ -5,21 +5,42 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace JsonApiSerializer.Util
 {
-    internal static class JsonSerializerExtensions
+    internal static class WriterUtil
     {
-        /// <summary>
-        /// If a reader is at a property will populate the associated property in the object
-        /// </summary>
-        /// <param name="serializer"></param>
-        /// <param name="reader"></param>
-        /// <param name="obj"></param>
-        /// <param name="contract"></param>
-        /// <returns></returns>
-        public static object PopulateProperty(this JsonSerializer serializer, JsonReader reader, object obj, JsonObjectContract contract)
+        internal static IDisposable WritePath(JsonWriter writer, Regex pathCondition, string element)
+        {
+            if (!pathCondition.IsMatch(writer.Path))
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(element);
+                return new ActionDisposable(writer.WriteEndObject);
+            }
+            return null;
+        }
+
+      
+    
+
+
+
+
+
+
+
+    /// <summary>
+    /// If a reader is at a property will populate the associated property in the object
+    /// </summary>
+    /// <param name="serializer"></param>
+    /// <param name="reader"></param>
+    /// <param name="obj"></param>
+    /// <param name="contract"></param>
+    /// <returns></returns>
+    public static object PopulateProperty(this JsonSerializer serializer, JsonReader reader, object obj, JsonObjectContract contract)
         {
             if (reader.TokenType != JsonToken.PropertyName)
                 throw new Exception($"Expected {JsonToken.PropertyName} in reader");
@@ -35,6 +56,23 @@ namespace JsonApiSerializer.Util
             prop.ValueProvider.SetValue(obj, value);
             return value;
         }
+
+        public static bool TryPopulateProperty(this JsonSerializer serializer, object obj, KeyValuePair<string, JsonReader> property, JsonObjectContract contract)
+        {
+            var prop = contract.Properties.GetClosestMatchProperty(property.Key);
+            if (prop == null)
+            {
+                property.Value.Skip();
+                return false;
+            }
+
+            var value = serializer.Deserialize(property.Value, prop.PropertyType);
+            prop.ValueProvider.SetValue(obj, value);
+            return true;
+        }
+
+
+
 
         public static void Populate(this JsonSerializer serializer, JToken jtoken, object obj)
         {
