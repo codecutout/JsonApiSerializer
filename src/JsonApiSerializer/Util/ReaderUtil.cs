@@ -1,8 +1,10 @@
-﻿using JsonApiSerializer.JsonApi.WellKnown;
+﻿using JsonApiSerializer.Exceptions;
+using JsonApiSerializer.JsonApi.WellKnown;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,31 +12,37 @@ namespace JsonApiSerializer.Util
 {
     internal static class ReaderUtil
     {
-        public static ResourceObjectReference ReadAheadToIdentifyObject(ref JsonReader reader)
+        public static ResourceObjectReference ReadAheadToIdentifyObject(ForkableJsonReader reader)
         {
-            var lookAheadReader = ForkableJsonReader.LookAhead(ref reader);
-            var properties = ReaderUtil.EnumerateProperties(lookAheadReader);
+            var lookAheadReader = reader.Fork();
             var reference = new ResourceObjectReference();
 
-            while (properties.MoveNext())
+            foreach (var propName in ReaderUtil.IterateProperties(lookAheadReader))
             {
-                var propName = properties.Current;
-
                 if (propName == PropertyNames.Id)
-                    reference.Id = lookAheadReader.Value.ToString();
+                {
+                    if (lookAheadReader.TokenType != JsonToken.String)
+                        throw new JsonApiFormatException(lookAheadReader.FullPath,
+                            $"Expected to find string at {lookAheadReader.FullPath}",
+                            "The value of 'id' MUST be a string");
+                    reference.Id = (string)lookAheadReader.Value;
+                }
+                    
                 else if (propName == PropertyNames.Type)
-                    reference.Type = lookAheadReader.Value.ToString();
+                {
+                    if (lookAheadReader.TokenType != JsonToken.String)
+                        throw new JsonApiFormatException(lookAheadReader.FullPath,
+                            $"Expected to find string at {lookAheadReader.FullPath}",
+                            "The value of 'type' MUST be a string");
+                    reference.Type = (string)lookAheadReader.Value;
+                }
+                    
 
                 if (reference.Id != null && reference.Type != null)
                     break;
             }
 
             return reference;
-        }
-
-        public static IEnumerator<string> EnumerateProperties(JsonReader reader)
-        {
-            return IterateProperties(reader).GetEnumerator();
         }
 
         /// <summary>
@@ -50,13 +58,24 @@ namespace JsonApiSerializer.Util
             if (reader.TokenType == JsonToken.Null)
                 yield break;
             if (reader.TokenType != JsonToken.StartObject)
-                throw new ArgumentException($"Expected {JsonToken.StartObject} in reader", nameof(reader));
+            {
+                //check if we are an object that the json:api spec says is mandatory to be an object
+                var propName = reader.Path.Split('.').LastOrDefault();
+                var specInfo = new[] { "relationships", "attributes" }.Contains(propName)
+                    ? $"The value of the '{propName}' key MUST be an object"
+                    : null;
+                throw new JsonApiFormatException(reader.Path, 
+                    $"Expected to find json object at {reader.Path}", 
+                    specInfo);
+            }
+                
 
             reader.Read();
             while (reader.TokenType != JsonToken.EndObject)
             {
+                //this error only gets thrown if a caller puts the JsonReader in an odd state
                 if (reader.TokenType != JsonToken.PropertyName)
-                    throw new Exception($"Expected {JsonToken.PropertyName} in reader");
+                    throw new JsonApiFormatException(reader.Path, $"Expected {JsonToken.PropertyName} in reader");
                 var jsonPropName = reader.Value;
                 var startPath = reader.Path;
                 reader.Read();
@@ -112,7 +131,15 @@ namespace JsonApiSerializer.Util
             }
         }
 
-        public static IDisposable ReadUntilPath(JsonReader reader, Regex pathRegex)
+        public static TResult ReadInto<TReader, TResult>(TReader reader, Regex pathRegex, Func<TReader, TResult> action) where TReader : JsonReader
+        {
+            var startPath = ReadUntilStart(reader, pathRegex);
+            var result = action(reader);
+            ReadUntilEnd(reader, startPath);
+            return result;
+        }
+
+        public static string ReadUntilStart(JsonReader reader, Regex pathRegex)
         {
             var startPath = reader.Path;
 
@@ -124,12 +151,12 @@ namespace JsonApiSerializer.Util
                     case JsonToken.StartArray:
                     case JsonToken.Null:
                         if (pathRegex.IsMatch(reader.Path))
-                            return new ReadUntilEnd(reader, startPath);
+                            return startPath;
                         break;
                     case JsonToken.EndObject:
                     case JsonToken.EndArray:
                         if (reader.Path == startPath)
-                            throw new Exception();
+                            throw new JsonApiFormatException(startPath, $"Expected to find nested object within {startPath} that matches \\{pathRegex}\\");
                         break;
                     default:
                         break;
@@ -137,29 +164,30 @@ namespace JsonApiSerializer.Util
                 }
             } while (reader.Read());
 
-            throw new Exception();
+            throw new JsonApiFormatException(startPath, $"Expected to find nested object matching path \\{pathRegex}\\");
         }
 
-        private struct ReadUntilEnd : IDisposable
+        public static void ReadUntilEnd(JsonReader reader, string path)
         {
-            public readonly JsonReader Reader;
-            public readonly string Path;
+            if (string.IsNullOrWhiteSpace(path))
+                return;
 
-            public ReadUntilEnd(JsonReader reader, string path)
+            do
             {
-                this.Reader = reader;
-                this.Path = path;
-            }
-
-            public void Dispose()
-            {
-                do
+                switch (reader.TokenType)
                 {
-                    if ((Reader.TokenType == JsonToken.EndObject || Reader.TokenType == JsonToken.EndArray) && Reader.Path == Path)
-                        return;
+                    case JsonToken.EndObject:
+                    case JsonToken.EndArray:
+                        if (reader.Path == path)
+                            return;
+                        break;
+                    default:
+                        break;
+
                 }
-                while (Reader.Read());
-            }
+            } while (reader.Read());
+
+            throw new JsonApiFormatException(path, $"Unable to find closing element element");
         }
     }
 }

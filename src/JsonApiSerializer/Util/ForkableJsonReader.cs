@@ -9,7 +9,16 @@ namespace JsonApiSerializer.Util
     {
         protected readonly JsonReader InnerReader;
 
+        protected readonly string ParentPath;
+
         private JsonReaderState ReaderState;
+
+        public string FullPath {
+            get
+            {
+                return (ParentPath + "." + Path).Trim('.');
+            }
+        }
 
         public ForkableJsonReader(JsonReader reader) 
             : this(reader, new JsonReaderState(reader.TokenType, reader.Value))
@@ -20,8 +29,9 @@ namespace JsonApiSerializer.Util
         private ForkableJsonReader(JsonReader reader, JsonReaderState state)
         {
             this.InnerReader = reader;
+            this.ParentPath = reader.Path;
             this.SetToken(state.Token, state.Value);
-            ReaderState = state;
+            this.ReaderState = state;
         }
 
 
@@ -44,17 +54,9 @@ namespace JsonApiSerializer.Util
             }
         }
 
-        private JsonReader Fork()
+        public ForkableJsonReader Fork()
         {
             return new ForkableJsonReader(this.InnerReader, this.ReaderState);
-           
-        }
-
-        public static JsonReader LookAhead(ref JsonReader reader)
-        {
-            var peekJsonReader = (reader as ForkableJsonReader) ?? new ForkableJsonReader(reader);
-            reader = peekJsonReader;
-            return peekJsonReader.Fork();
         }
 
      

@@ -16,13 +16,14 @@ namespace JsonApiSerializer.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            var reference = ReaderUtil.ReadAheadToIdentifyObject(ref reader);
+            var forkableReader = reader as ForkableJsonReader ?? new ForkableJsonReader(reader);
+            var reference = ReaderUtil.ReadAheadToIdentifyObject(forkableReader);
             var existingObject = serializer.ReferenceResolver.ResolveReference(null, reference.ToString());
 
             if(existingObject == null)
             {
                 //we dont know what type this object should be so we will just save it as a JObject
-                var unknownObject = serializer.Deserialize<JObject>(reader);
+                var unknownObject = serializer.Deserialize<JObject>(forkableReader);
                 serializer.ReferenceResolver.AddReference(null, reference.ToString(), unknownObject);
                 return unknownObject;
             }

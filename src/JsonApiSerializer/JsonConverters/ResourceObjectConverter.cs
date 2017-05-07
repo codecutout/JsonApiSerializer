@@ -38,11 +38,15 @@ namespace JsonApiSerializer
             if (DocumentRootConverter.TryResolveAsRoot(reader, objectType, serializer, out obj))
                 return obj;
 
-            using (ReaderUtil.ReadUntilPath(reader, DataReadPathRegex))
-            {
 
+            //read into the 'Data' element
+            return ReaderUtil.ReadInto(
+                reader as ForkableJsonReader ?? new ForkableJsonReader(reader),
+                DataReadPathRegex, 
+                dataReader=>
+            {
                 //if the value has been explicitly set to null then the value of the element is simply null
-                if (reader.TokenType == JsonToken.Null)
+                if (dataReader.TokenType == JsonToken.Null)
                     return null;
 
                 JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
@@ -51,7 +55,7 @@ namespace JsonApiSerializer
                 //if we dont have one there then create a new object to populate
                 if (existingValue == null)
                 {
-                    var reference = ReaderUtil.ReadAheadToIdentifyObject(ref reader);
+                    var reference = ReaderUtil.ReadAheadToIdentifyObject(dataReader);
                     existingValue = serializer.ReferenceResolver.ResolveReference(null, reference.ToString());
                     if (existingValue == null)
                     {
@@ -63,30 +67,23 @@ namespace JsonApiSerializer
                         //sometimes the value in the reference resolver is a JObject. This occurs when we
                         //did not know what type it should be when we first read it (i.e. included was processed
                         //before the item). In these cases we will create a new object and read data from the JObject
-                        reader = ((JObject)existingValue).CreateReader();
-                        reader.Read(); //JObject readers begin at Not Started
+                        dataReader = new ForkableJsonReader(((JObject)existingValue).CreateReader());
+                        dataReader.Read(); //JObject readers begin at Not Started
                         existingValue = contract.DefaultCreator();
                         serializer.ReferenceResolver.AddReference(null, reference.ToString(), existingValue);
-                        //PopulateProperties(serializer, existingValue, jObjectReader, contract);
                     }
-
                 }
 
-                PopulateProperties(serializer, existingValue, reader, contract);
+                PopulateProperties(serializer, existingValue, dataReader, contract);
                 return existingValue;
-                
-            }
+            });
         }
 
 
         protected void PopulateProperties(JsonSerializer serializer, object obj, JsonReader reader, JsonObjectContract contract)
         {
-            var propertyEnumerator = ReaderUtil.EnumerateProperties(reader);
-            while (propertyEnumerator.MoveNext())
+            foreach (var propName in ReaderUtil.IterateProperties(reader))
             {
-                var propName = propertyEnumerator.Current;
-
-               
                 var successfullyPopulateProperty = ReaderUtil.TryPopulateProperty(
                     serializer, 
                     obj, 
@@ -96,13 +93,12 @@ namespace JsonApiSerializer
                 //flatten out attributes onto the object
                 if (!successfullyPopulateProperty && propName == "attributes")
                 {
-                    var innerProps = ReaderUtil.EnumerateProperties(reader);
-                    while (innerProps.MoveNext())
+                    foreach (var innerPropName in ReaderUtil.IterateProperties(reader))
                     {
                         ReaderUtil.TryPopulateProperty(
                            serializer,
                            obj,
-                           contract.Properties.GetClosestMatchProperty(innerProps.Current),
+                           contract.Properties.GetClosestMatchProperty(innerPropName),
                            reader);
                     }
                 }
@@ -110,13 +106,12 @@ namespace JsonApiSerializer
                 //flatten out relationships onto the object
                 if (!successfullyPopulateProperty && propName == "relationships")
                 {
-                    var innerProps = ReaderUtil.EnumerateProperties(reader);
-                    while (innerProps.MoveNext())
+                    foreach (var innerPropName in ReaderUtil.IterateProperties(reader))
                     {
                         ReaderUtil.TryPopulateProperty(
                             serializer, 
                             obj,
-                            contract.Properties.GetClosestMatchProperty(innerProps.Current),
+                            contract.Properties.GetClosestMatchProperty(innerPropName),
                             reader);
                     }
                 }

@@ -17,7 +17,7 @@ using Xunit;
 
 namespace JsonApiSerializer.Test.DeserializationTests
 {
-    public class DocumentRootDeserializationTests
+    public class DeserializationDocumentRootTests
     {
         [Fact]
         public void When_object_root_with_array_should_deserialize()
