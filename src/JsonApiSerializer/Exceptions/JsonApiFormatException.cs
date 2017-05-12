@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace JsonApiSerializer.Exceptions
 {
-    public class JsonApiFormatException : Exception
+    public class JsonApiFormatException : JsonSerializationException
     {
         public readonly string Path;
 

@@ -96,5 +96,16 @@ namespace JsonApiSerializer.Test.DeserializationTests
                 json,
                 settings));
         }
+
+        [Fact]
+        public void When_model_references_same_object_withdifferent_type_shoud_throw_exception()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.sample-error-two-class-single-include.json");
+            var settings = new JsonApiSerializerSettings();
+
+            var exception = Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => JsonConvert.DeserializeObject<Article[]>(
+                json,
+                settings));
+        }
     }
 }
