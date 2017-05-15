@@ -31,7 +31,7 @@ namespace JsonApiSerializer.JsonConverters
         {
             //we may be starting the deserialization here, if thats the case we need to resolve this object as the root
             object obj;
-            if (DocumentRootConverter.TryResolveAsRoot(reader, objectType, serializer, out obj))
+            if (DocumentRootConverter.TryResolveAsRootData(reader, objectType, serializer, out obj))
                 return obj;
 
 
@@ -117,7 +117,7 @@ namespace JsonApiSerializer.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (DocumentRootConverter.TryResolveAsRoot(writer, value, serializer))
+            if (DocumentRootConverter.TryResolveAsRootData(writer, value, serializer))
                 return;
 
             WriterUtil.WriteIntoElement(writer, DataWritePathRegex, PropertyNames.Data, () =>

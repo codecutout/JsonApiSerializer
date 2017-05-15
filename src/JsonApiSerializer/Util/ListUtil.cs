@@ -10,6 +10,12 @@ namespace JsonApiSerializer.Util
 {
     internal static class ListUtil
     {
+        public static bool IsList(Type type)
+        {
+            Type output;
+            return IsList(type, out output);
+        }
+
         /// <summary>
         /// Determines whether the specified type is list.
         /// </summary>
@@ -18,7 +24,7 @@ namespace JsonApiSerializer.Util
         /// <returns>
         ///   <c>true</c> if the specified type is list; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsList(Type type, out Type elementType)
+            public static bool IsList(Type type, out Type elementType)
         {
             if (type.IsArray)
             {
