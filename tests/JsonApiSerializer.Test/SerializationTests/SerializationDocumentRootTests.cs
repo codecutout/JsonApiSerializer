@@ -19,7 +19,7 @@ using Xunit;
 
 namespace JsonApiSerializer.Test.SerializationTests
 {
-    public class DocumentRootSerializationTests
+    public class SerializationDocumentRootTests
     {
 
         public JsonApiSerializerSettings settings = new JsonApiSerializerSettings()

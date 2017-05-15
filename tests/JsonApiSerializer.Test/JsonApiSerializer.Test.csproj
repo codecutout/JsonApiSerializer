@@ -7,6 +7,14 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\Articles\author-comments-null.json" />
+    <EmbeddedResource Include="Data\Articles\sample-error-two-class-single-include.json" />
+    <EmbeddedResource Include="Data\Articles\sample-error-model-not-match-values.json" />
+    <EmbeddedResource Include="Data\Articles\sample-error-attributes-not-object.json" />
+    <EmbeddedResource Include="Data\Articles\sample-error-relationship-not-object.json" />
+    <EmbeddedResource Include="Data\Articles\sample-error-missing-data-element.json" />
+    <EmbeddedResource Include="Data\Articles\sample-error-id-not-string.json" />
+    <EmbeddedResource Include="Data\Articles\sample-error-type-not-string.json" />
+    <EmbeddedResource Include="Data\Articles\sample-out-of-order.json" />
     <EmbeddedResource Include="Data\Articles\single-item.json" />
   </ItemGroup>
   <ItemGroup>

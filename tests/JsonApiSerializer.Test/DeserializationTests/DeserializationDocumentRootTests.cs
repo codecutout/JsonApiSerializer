@@ -17,7 +17,7 @@ using Xunit;
 
 namespace JsonApiSerializer.Test.DeserializationTests
 {
-    public class DocumentRootDeserializationTests
+    public class DeserializationDocumentRootTests
     {
         [Fact]
         public void When_object_root_with_array_should_deserialize()
@@ -108,6 +108,19 @@ namespace JsonApiSerializer.Test.DeserializationTests
             var json = EmbeddedResource.Read("Data.Articles.single-item.json");
 
             var articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
+
+            AssertArticlesMatchData(articles);
+        }
+
+        [Fact]
+        public void When_json_order_unconventional_should_deserialize()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.sample-out-of-order.json");
+
+            var settings = new JsonApiSerializerSettings();
+            var articles = JsonConvert.DeserializeObject<Article[]>(
+                json,
+                new JsonApiSerializerSettings());
 
             AssertArticlesMatchData(articles);
         }

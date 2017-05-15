@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.12
+VisualStudioVersion = 15.0.26403.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonApiSerializer", "src\JsonApiSerializer\JsonApiSerializer.csproj", "{3CFAD26B-A705-4180-A210-E0B7BBDF6404}"
 EndProject

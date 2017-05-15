@@ -11,7 +11,7 @@ using Xunit;
 
 namespace JsonApiSerializer.Test.SerializationTests
 {
-    public class RelationshipSerializationTests
+    public class SerializationRelationshipTests
     {
         public JsonApiSerializerSettings settings = new JsonApiSerializerSettings()
         {

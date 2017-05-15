@@ -51,6 +51,8 @@ public class Person
 }
 ```
 
+### Deserialization
+
 and json:api content that look something like
 
 ```json
@@ -112,6 +114,8 @@ We can deserialize with
 ```csharp
 Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
 ```
+
+### Serialization
 
 We can also generate the JSON from our object model
 ```csharp

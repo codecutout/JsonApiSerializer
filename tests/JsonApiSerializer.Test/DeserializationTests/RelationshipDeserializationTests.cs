@@ -10,7 +10,7 @@ using Xunit;
 
 namespace JsonApiSerializer.Test.DeserializationTests
 {
-    public class RelationshipDeserializationTests
+    public class DeserializationRelationshipTests
     {
         [Fact]
         public void When_reference_same_object_should_have_deserialize_same_object()

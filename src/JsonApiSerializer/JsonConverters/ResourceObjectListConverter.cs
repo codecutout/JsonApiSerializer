@@ -1,4 +1,5 @@
 ﻿using JsonApiSerializer.JsonApi;
+using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -12,11 +13,13 @@ using System.Threading.Tasks;
 
 namespace JsonApiSerializer.JsonConverters
 {
-    internal class ResourceListWrapConverter : JsonConverter
+    internal class ResourceObjectListConverter : JsonConverter
     {
+        private static readonly Regex DataPathRegex = new Regex($@"{PropertyNames.Data}$");
+
         public readonly JsonConverter ResourceObjectConverter;
 
-        public ResourceListWrapConverter(JsonConverter resourceObjectConverter)
+        public ResourceObjectListConverter(JsonConverter resourceObjectConverter)
         {
             ResourceObjectConverter = resourceObjectConverter;
         }
@@ -26,35 +29,38 @@ namespace JsonApiSerializer.JsonConverters
             Type elementType;
             return ListUtil.IsList(objectType, out elementType) && ResourceObjectConverter.CanConvert(elementType);
         }
-
+        
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             object list;
-            if (ResourceWrapConverter.TryResolveAsRoot(reader, objectType, serializer, out list))
+            if (DocumentRootConverter.TryResolveAsRoot(reader, objectType, serializer, out list))
                 return list;
 
-            using (ResourceWrapConverter.MoveToDataElement(reader))
-            {
-                //we should be dealing with list types, but we also want the element type
-                Type elementType;
-                if (!ListUtil.IsList(objectType, out elementType))
-                    throw new ArgumentException($"{typeof(ResourceListWrapConverter)} can only read json lists", nameof(objectType));
+            //read into the 'Data' path
+            var preDataPath = ReaderUtil.ReadUntilStart(reader, DataPathRegex);
+            
+            //we should be dealing with list types, but we also want the element type
+            Type elementType;
+            if (!ListUtil.IsList(objectType, out elementType))
+                throw new ArgumentException($"{typeof(ResourceObjectListConverter)} can only read json lists", nameof(objectType));
 
+            var itemsIterator = ReaderUtil.IterateList(reader).Select(x => serializer.Deserialize(reader, elementType));
+            list = ListUtil.CreateList(objectType, itemsIterator);
 
-                var itemsIterator = reader.IterateList().Select(x => serializer.Deserialize(reader, elementType));
-                list = ListUtil.CreateList(objectType, itemsIterator);
+            //read out of the 'Data' path
+            ReaderUtil.ReadUntilEnd(reader, preDataPath);
 
-                return list;
-            }
+            return list;
+            
            
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (ResourceWrapConverter.TryResolveAsRoot(writer, value, serializer))
+            if (DocumentRootConverter.TryResolveAsRoot(writer, value, serializer))
                 return;
 
-            using (ResourceWrapConverter.MoveToDataElement(writer))
+            WriterUtil.WriteIntoElement(writer, DataPathRegex, PropertyNames.Data, () =>
             {
                 var enumerable = value as IEnumerable<object> ?? Enumerable.Empty<object>();
                 writer.WriteStartArray();
@@ -63,7 +69,7 @@ namespace JsonApiSerializer.JsonConverters
                     serializer.Serialize(writer, valueElement);
                 }
                 writer.WriteEndArray();
-            }
+            });
         }
     }
 }
