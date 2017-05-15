@@ -12,6 +12,11 @@ namespace JsonApiSerializer.Util
 {
     internal static class ReaderUtil
     {
+        /// <summary>
+        /// Forks the reader and reads ahead to find the id and type of an object reference
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns></returns>
         public static ResourceObjectReference ReadAheadToIdentifyObject(ForkableJsonReader reader)
         {
             var lookAheadReader = reader.Fork();
@@ -50,8 +55,7 @@ namespace JsonApiSerializer.Util
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <returns></returns>
-        /// <exception cref="System.ArgumentException">When reader is not at the start of an object</exception>
-        /// <exception cref="System.Exception"></exception>
+        /// <exception cref="JsonApiFormatException">When reader is not at the start of an object</exception>
         public static IEnumerable<string> IterateProperties(JsonReader reader)
         {
             
@@ -88,6 +92,14 @@ namespace JsonApiSerializer.Util
             }
         }
 
+        /// <summary>
+        /// Attempt to populate the property with the value from the serializer
+        /// </summary>
+        /// <param name="serializer"></param>
+        /// <param name="obj"></param>
+        /// <param name="property"></param>
+        /// <param name="value"></param>
+        /// <returns><c>True</c> if the property could be set otherwise <c>false</c></returns>
         public static bool TryPopulateProperty(JsonSerializer serializer, object obj, JsonProperty property, JsonReader value)
         {
             if (property == null || property.Ignored || !property.Writable)
@@ -127,10 +139,18 @@ namespace JsonApiSerializer.Util
             {
                 //are a value, we will return the items as though its a list with just that item
                 yield return reader.Value;
-                yield break;
             }
         }
 
+        /// <summary>
+        /// Reads into an element, performs the action then reads out of the element
+        /// </summary>
+        /// <typeparam name="TReader"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="reader"></param>
+        /// <param name="pathRegex"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
         public static TResult ReadInto<TReader, TResult>(TReader reader, Regex pathRegex, Func<TReader, TResult> action) where TReader : JsonReader
         {
             var startPath = ReadUntilStart(reader, pathRegex);
@@ -139,6 +159,12 @@ namespace JsonApiSerializer.Util
             return result;
         }
 
+        /// <summary>
+        /// Reads until the path matches the regex
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="pathRegex"></param>
+        /// <returns></returns>
         public static string ReadUntilStart(JsonReader reader, Regex pathRegex)
         {
             var startPath = reader.Path;
@@ -167,6 +193,11 @@ namespace JsonApiSerializer.Util
             throw new JsonApiFormatException(startPath, $"Expected to find nested object matching path \\{pathRegex}\\");
         }
 
+        /// <summary>
+        /// Reads until we are at the end element in the path
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="path"></param>
         public static void ReadUntilEnd(JsonReader reader, string path)
         {
             if (string.IsNullOrWhiteSpace(path))

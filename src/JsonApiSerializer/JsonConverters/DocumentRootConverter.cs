@@ -37,7 +37,6 @@ namespace JsonApiSerializer.JsonConverters
             var rootObject = contract.DefaultCreator();
             serializer.ReferenceResolver.AddReference(null, IncludedReferenceResolver.RootReference, rootObject);
 
-            JToken dataJObj = null;
             var includedConverter = new IncludedConverter();
 
             foreach (var propName in ReaderUtil.IterateProperties(reader))

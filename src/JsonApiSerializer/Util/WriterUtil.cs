@@ -12,15 +12,19 @@ namespace JsonApiSerializer.Util
 {
     internal static class WriterUtil
     {
-        internal static IDisposable WritePath(JsonWriter writer, Regex pathCondition, string element)
+        internal static void WriteIntoElement(JsonWriter writer, Regex pathCondition, string element, Action action)
         {
-            if (!pathCondition.IsMatch(writer.Path))
+            if (pathCondition.IsMatch(writer.Path))
+            {
+                action();
+            }
+            else
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName(element);
-                return new ActionDisposable(writer.WriteEndObject);
+                action();
+                writer.WriteEndObject();
             }
-            return null;
         }
     }
 }

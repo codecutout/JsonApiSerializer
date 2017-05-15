@@ -60,7 +60,7 @@ namespace JsonApiSerializer.JsonConverters
             if (DocumentRootConverter.TryResolveAsRoot(writer, value, serializer))
                 return;
 
-            using (WriterUtil.WritePath(writer, DataPathRegex, PropertyNames.Data))
+            WriterUtil.WriteIntoElement(writer, DataPathRegex, PropertyNames.Data, () =>
             {
                 var enumerable = value as IEnumerable<object> ?? Enumerable.Empty<object>();
                 writer.WriteStartArray();
@@ -69,7 +69,7 @@ namespace JsonApiSerializer.JsonConverters
                     serializer.Serialize(writer, valueElement);
                 }
                 writer.WriteEndArray();
-            }
+            });
         }
     }
 }

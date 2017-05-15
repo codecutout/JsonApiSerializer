@@ -10,6 +10,6 @@ namespace JsonApiSerializer.Test.Models.Articles
 {
     public class ArticleWithReadonlyType : Article
     {
-        public string Type { get; } = "readonly-article-type";
+        public new string Type { get; } = "readonly-article-type";
     }
 }

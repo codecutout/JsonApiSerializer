@@ -120,7 +120,7 @@ namespace JsonApiSerializer.JsonConverters
             if (DocumentRootConverter.TryResolveAsRoot(writer, value, serializer))
                 return;
 
-            using (WriterUtil.WritePath(writer, DataWritePathRegex, PropertyNames.Data))
+            WriterUtil.WriteIntoElement(writer, DataWritePathRegex, PropertyNames.Data, () =>
             {
                 var probe = writer as AttributeOrRelationshipProbe;
                 if (probe != null)
@@ -134,7 +134,7 @@ namespace JsonApiSerializer.JsonConverters
                 {
                     WriteFullObjectJson(writer, value, serializer);
                 }
-            }
+            });
         }
 
 
