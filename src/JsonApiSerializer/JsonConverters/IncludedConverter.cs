@@ -29,7 +29,7 @@ namespace JsonApiSerializer.JsonConverters
             }
             else if(existingObject is JObject)
             {
-                //we already have a resolved object that we dont know what hte type is, we will keep the first one
+                //we already have a resolved object that we dont know what the type is, we will keep the first one
                 return existingObject;
             }
             else

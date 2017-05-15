@@ -90,7 +90,7 @@ namespace JsonApiSerializer.Util
 
         public static bool TryPopulateProperty(JsonSerializer serializer, object obj, JsonProperty property, JsonReader value)
         {
-            if (property == null)
+            if (property == null || property.Ignored || !property.Writable)
             {
                 return false;
             }

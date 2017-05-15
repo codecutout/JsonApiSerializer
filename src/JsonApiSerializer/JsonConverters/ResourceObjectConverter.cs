@@ -1,20 +1,16 @@
-﻿using JsonApiSerializer.JsonApi.WellKnown;
-using JsonApiSerializer.JsonConverters;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.ReferenceResolvers;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
-namespace JsonApiSerializer
+namespace JsonApiSerializer.JsonConverters
 {
     /// <summary>
     /// Provides functionality to convert a JsonApi resoruce object into a .NET object
@@ -149,13 +145,16 @@ namespace JsonApiSerializer
             writer.WriteStartObject();
 
             //A resource object MUST contain at least the following top-level members: type
-            writer.WritePropertyName("type");
             var typeProp = contract.Properties.GetClosestMatchProperty("type");
-            serializer.Serialize(writer, typeProp?.ValueProvider?.GetValue(value) ?? valueType.Name.ToLowerInvariant());
+            if (typeProp == null)
+            {
+                writer.WritePropertyName("type");
+                serializer.Serialize(writer, typeProp?.ValueProvider?.GetValue(value) ?? valueType.Name.ToLowerInvariant());
+            }
 
             List<JsonWriterCapture> attributes = new List<JsonWriterCapture>();
             List<JsonWriterCapture> relationships = new List<JsonWriterCapture>();
-            foreach (var prop in contract.Properties.Where(x=>x != typeProp && !x.Ignored))
+            foreach (var prop in contract.Properties.Where(x=>!x.Ignored))
             {
                 var propValue = prop.ValueProvider.GetValue(value);
                 if (propValue == null && serializer.NullValueHandling == NullValueHandling.Ignore)
@@ -169,6 +168,10 @@ namespace JsonApiSerializer
                     case PropertyNames.Id: //Id is optional on base objects, so we will put it with the other optional properties
                         writer.WritePropertyName(prop.PropertyName);
                         serializer.Serialize(writer, propValue);
+                        break;
+                    case PropertyNames.Type:
+                        writer.WritePropertyName("type");
+                        serializer.Serialize(writer, typeProp?.ValueProvider?.GetValue(value) ?? valueType.Name.ToLowerInvariant());
                         break;
                     default:
                         //we do not know if it is an Attribute or a Relationship
@@ -214,7 +217,7 @@ namespace JsonApiSerializer
 
             writer.WriteStartObject();
 
-            //A “resource identifier object” MUST contain type and id members.
+            //A "resource identifier object" MUST contain type and id members.
             writer.WritePropertyName(PropertyNames.Id);
             var idProp = contract.Properties.GetClosestMatchProperty(PropertyNames.Id);
             var idVal = idProp?.ValueProvider?.GetValue(value) ?? string.Empty;

@@ -15,7 +15,7 @@ namespace JsonApiSerializer.JsonConverters
 {
     internal class ResourceObjectListConverter : JsonConverter
     {
-        private static Regex DataPathRegex = new Regex($@"{PropertyNames.Data}$");
+        private static readonly Regex DataPathRegex = new Regex($@"{PropertyNames.Data}$");
 
         public readonly JsonConverter ResourceObjectConverter;
 
