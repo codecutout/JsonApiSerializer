@@ -18,7 +18,7 @@ using Xunit;
 
 namespace JsonApiSerializer.Test.DeserializationTests
 {
-    public class DeserializationErrorTests
+    public class DeserializationExceptionTests
     {
         [Fact]
         public void When_type_not_a_string_should_throw()
