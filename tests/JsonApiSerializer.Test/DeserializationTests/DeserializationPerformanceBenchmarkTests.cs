@@ -28,7 +28,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
             this.output = output;
         }
 
-        [Fact]
+        [Fact(Skip = "Used for benchmarking only")]
         public void When_object_root_with_array_should_deserialize()
         {
             var json = EmbeddedResource.Read("Data.Articles.sample.json");

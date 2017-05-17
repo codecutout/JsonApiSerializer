@@ -44,14 +44,12 @@ namespace JsonApiSerializer.JsonConverters
                 switch (propName)
                 {
                     case PropertyNames.Data:
-                        //we cant process the data object until all the included is done, so we will
-                        //store it in a JObject to process later
+
                         var documentRootInterfaceType = TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
                             .Select(x => x.GetTypeInfo())
                             .FirstOrDefault(x =>
                                 x.IsGenericType
                                 && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
-
                         var dataType = documentRootInterfaceType.GenericTypeArguments[0];
 
                         var dataObj = serializer.Deserialize(reader, dataType);
@@ -140,7 +138,49 @@ namespace JsonApiSerializer.JsonConverters
             writer.WriteEndObject();
         }
 
-        internal static bool TryResolveAsRoot(JsonReader reader, Type objectType, JsonSerializer serializer, out object obj)
+        internal static bool TryResolveAsRootError(JsonReader reader, Type objectType, JsonSerializer serializer, out IEnumerable<IError> obj)
+        {
+            //if we already have a root object then we dont need to resolve the root object
+            if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
+            {
+                obj = null;
+                return false;
+            }
+
+            //we do not have a root object, so this is probably the entry point, so we will resolve
+            //a document root and return the data object
+            var documentRootType = typeof(MinimalDocumentRoot<>).MakeGenericType(objectType);
+            var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
+            var dataProp = objContract.Properties.GetClosestMatchProperty("errors");
+
+            var root = serializer.Deserialize(reader, documentRootType);
+            obj = (IEnumerable<IError>)dataProp.ValueProvider.GetValue(root);
+            return true;
+        }
+
+        internal static bool TryResolveAsRootError(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            //if we already have a root object then we dont need to resolve the root object
+            if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
+            {
+                return false;
+            }
+
+            //we do not have a root object, so this is probably the entry point, so we will resolve
+            //it as a document root
+            var documentRootType = typeof(MinimalDocumentRoot<>).MakeGenericType(typeof(object));
+            var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
+            var rootObj = objContract.DefaultCreator();
+
+            //set the data property to be our current object
+            var dataProp = objContract.Properties.GetClosestMatchProperty("errors");
+            dataProp.ValueProvider.SetValue(rootObj, value);
+
+            serializer.Serialize(writer, rootObj);
+            return true;
+        }
+
+        internal static bool TryResolveAsRootData(JsonReader reader, Type objectType, JsonSerializer serializer, out object obj)
         {
             //if we already have a root object then we dont need to resolve the root object
             if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
@@ -160,7 +200,7 @@ namespace JsonApiSerializer.JsonConverters
             return true;
         }
 
-        internal static bool TryResolveAsRoot(JsonWriter writer, object value, JsonSerializer serializer)
+        internal static bool TryResolveAsRootData(JsonWriter writer, object value, JsonSerializer serializer)
         {
             //if we already have a root object then we dont need to resolve the root object
             if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
@@ -185,6 +225,8 @@ namespace JsonApiSerializer.JsonConverters
         private class MinimalDocumentRoot<T> : IDocumentRoot<T>
         {
             public T Data { get; set; }
+
+            public IEnumerable<Error> Errors { get; set; }
         }
 
     }

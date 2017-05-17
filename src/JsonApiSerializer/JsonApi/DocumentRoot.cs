@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace JsonApiSerializer.JsonApi
 {
@@ -15,7 +16,7 @@ namespace JsonApiSerializer.JsonApi
     /// <seealso cref="JsonApiSerializer.JsonApi.WellKnown.IDocumentRoot{TData}" />
     public class DocumentRoot<TData> : IDocumentRoot<TData>
     {
-
+        [JsonProperty(propertyName: "jsonapi")]
         public VersionInfo JsonApi { get; set; }
 
         public TData Data { get; set; }

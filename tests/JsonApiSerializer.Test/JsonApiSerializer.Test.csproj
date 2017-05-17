@@ -19,6 +19,8 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Data\Articles\sample.json" />
+    <EmbeddedResource Include="Data\Errors\multiple.json" />
+    <EmbeddedResource Include="Data\Errors\single.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AutoFixture" Version="3.50.2" />

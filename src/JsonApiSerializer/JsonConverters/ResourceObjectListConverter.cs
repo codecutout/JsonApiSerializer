@@ -33,7 +33,7 @@ namespace JsonApiSerializer.JsonConverters
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             object list;
-            if (DocumentRootConverter.TryResolveAsRoot(reader, objectType, serializer, out list))
+            if (DocumentRootConverter.TryResolveAsRootData(reader, objectType, serializer, out list))
                 return list;
 
             //read into the 'Data' path
@@ -57,7 +57,7 @@ namespace JsonApiSerializer.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (DocumentRootConverter.TryResolveAsRoot(writer, value, serializer))
+            if (DocumentRootConverter.TryResolveAsRootData(writer, value, serializer))
                 return;
 
             WriterUtil.WriteIntoElement(writer, DataPathRegex, PropertyNames.Data, () =>

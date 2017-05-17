@@ -1,5 +1,4 @@
-﻿using JsonApiSerializer.Exceptions;
-using JsonApiSerializer.JsonApi;
+﻿using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.Test.Models.Articles;
 using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
@@ -21,91 +20,92 @@ namespace JsonApiSerializer.Test.DeserializationTests
     public class DeserializationErrorTests
     {
         [Fact]
-        public void When_type_not_a_string_should_throw()
+        public void When_error_should_error_list_deserialize()
         {
-            var json = EmbeddedResource.Read("Data.Articles.sample-error-type-not-string.json");
-            var settings = new JsonApiSerializerSettings();
+            var json = EmbeddedResource.Read("Data.Errors.single.json");
 
-            var exception = Assert.Throws<JsonApiFormatException>(() => JsonConvert.DeserializeObject<Article[]>(
+            var errors = JsonConvert.DeserializeObject<Error[]>(
                 json,
-                settings));
+                new JsonApiSerializerSettings());
 
-            Assert.Equal("data[0].type", exception.Path);
+            Assert.Equal(1, errors.Length);
+            var error = errors[0];
+            Assert.Equal("Invalid Attribute", error.Title);
+            Assert.Equal("First name must contain at least three characters.", error.Detail);
+            Assert.Equal("/data/attributes/first-name", error.Source.Pointer);
         }
 
         [Fact]
-        public void When_id_not_a_string_should_throw()
+        public void When_error_should_deserialize_null_object()
         {
-            var json = EmbeddedResource.Read("Data.Articles.sample-error-id-not-string.json");
-            var settings = new JsonApiSerializerSettings();
+            var json = EmbeddedResource.Read("Data.Errors.single.json");
 
-            var exception = Assert.Throws<JsonApiFormatException>(() => JsonConvert.DeserializeObject<Article[]>(
+            var articles = JsonConvert.DeserializeObject<Article[]>(
                 json,
-                settings));
+                new JsonApiSerializerSettings());
 
-            Assert.Equal("data[0].relationships.comments.data[1].id", exception.Path);
+            Assert.Null(articles);
+           
         }
 
         [Fact]
-        public void When_data_element_missing_should_throw()
+        public void When_error_should_deserialize_all_errors_object()
         {
-            var json = EmbeddedResource.Read("Data.Articles.sample-error-missing-data-element.json");
-            var settings = new JsonApiSerializerSettings();
+            var json = EmbeddedResource.Read("Data.Errors.multiple.json");
 
-            var exception = Assert.Throws<JsonApiFormatException>(() => JsonConvert.DeserializeObject<Article[]>(
+            var errors = JsonConvert.DeserializeObject<Error[]>(
                 json,
-                settings));
+                new JsonApiSerializerSettings());
 
-            Assert.Equal("data[0].relationships.author", exception.Path);
+            Assert.Equal(3, errors.Length);
+
+            var error1 = errors[0];
+            Assert.Equal("Value is too short", error1.Title);
+            Assert.Equal("First name must contain at least three characters.", error1.Detail);
+            Assert.Equal("/data/attributes/first-name", error1.Source.Pointer);
+            Assert.Equal("123", error1.Code);
+
+            var error2 = errors[1];
+            Assert.Equal("Passwords must contain a letter, number, and punctuation character.", error2.Title);
+            Assert.Equal("The password provided is missing a punctuation character.", error2.Detail);
+            Assert.Equal("/data/attributes/password", error2.Source.Pointer);
+            Assert.Equal("225", error2.Code);
+
+            var error3 = errors[2];
+            Assert.Equal("Password and password confirmation do not match.", error3.Title);
+            Assert.Equal("/data/attributes/password", error3.Source.Pointer);
+            Assert.Equal("226", error3.Code);
+
         }
 
         [Fact]
-        public void When_relationships_not_an_object_should_throw()
+        public void When_error_should_deserialize_document_root()
         {
-            var json = EmbeddedResource.Read("Data.Articles.sample-error-relationship-not-object.json");
-            var settings = new JsonApiSerializerSettings();
+            var json = EmbeddedResource.Read("Data.Errors.multiple.json");
 
-            var exception = Assert.Throws<JsonApiFormatException>(() => JsonConvert.DeserializeObject<Article[]>(
+            var doc = JsonConvert.DeserializeObject<DocumentRoot<Article>>(
                 json,
-                settings));
+                new JsonApiSerializerSettings());
 
-            Assert.Equal("data[0].relationships", exception.Path);
-        }
+            Assert.Equal(3, doc.Errors.Count);
 
+            var error1 = doc.Errors[0];
+            Assert.Equal("Value is too short", error1.Title);
+            Assert.Equal("First name must contain at least three characters.", error1.Detail);
+            Assert.Equal("/data/attributes/first-name", error1.Source.Pointer);
+            Assert.Equal("123", error1.Code);
 
-        [Fact]
-        public void When_attributes_not_object_should_throw()
-        {
-            var json = EmbeddedResource.Read("Data.Articles.sample-error-attributes-not-object.json");
-            var settings = new JsonApiSerializerSettings();
+            var error2 = doc.Errors[1];
+            Assert.Equal("Passwords must contain a letter, number, and punctuation character.", error2.Title);
+            Assert.Equal("The password provided is missing a punctuation character.", error2.Detail);
+            Assert.Equal("/data/attributes/password", error2.Source.Pointer);
+            Assert.Equal("225", error2.Code);
 
-            var exception = Assert.Throws<JsonApiFormatException>(() => JsonConvert.DeserializeObject<Article[]>(
-                json,
-                settings));
+            var error3 = doc.Errors[2];
+            Assert.Equal("Password and password confirmation do not match.", error3.Title);
+            Assert.Equal("/data/attributes/password", error3.Source.Pointer);
+            Assert.Equal("226", error3.Code);
 
-            Assert.Equal("data[0].attributes", exception.Path);
-        }
-
-        [Fact]
-        public void When_model_does_not_match_json_should_throw_serialization_exception()
-        {
-            var json = EmbeddedResource.Read("Data.Articles.sample-error-model-not-match-values.json");
-            var settings = new JsonApiSerializerSettings();
-
-            var exception = Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => JsonConvert.DeserializeObject<Article[]>(
-                json,
-                settings));
-        }
-
-        [Fact]
-        public void When_model_references_same_object_withdifferent_type_shoud_throw_exception()
-        {
-            var json = EmbeddedResource.Read("Data.Articles.sample-error-two-class-single-include.json");
-            var settings = new JsonApiSerializerSettings();
-
-            var exception = Assert.Throws<Newtonsoft.Json.JsonSerializationException>(() => JsonConvert.DeserializeObject<Article[]>(
-                json,
-                settings));
         }
     }
 }

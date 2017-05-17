@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using JsonApiSerializer.JsonApi.WellKnown;
 
 namespace JsonApiSerializer
 {
@@ -32,6 +33,12 @@ namespace JsonApiSerializer
 
         protected override JsonConverter ResolveContractConverter(Type objectType)
         {
+            if(ErrorConverter.CanConvertStatic(objectType))
+                return new ErrorConverter();
+
+            if (ErrorListConverter.CanConvertStatic(objectType))
+                return new ErrorListConverter();
+
             if (ResourceObjectConverter.CanConvert(objectType))
                 return ResourceObjectConverter;
 
