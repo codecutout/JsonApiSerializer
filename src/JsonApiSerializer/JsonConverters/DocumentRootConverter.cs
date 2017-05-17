@@ -147,9 +147,15 @@ namespace JsonApiSerializer.JsonConverters
                 return false;
             }
 
+            //determine the error class type. The type passed in could be an array or an object
+            //so we need to determine the error type for both
+            Type errorElementType;
+            if (!ListUtil.IsList(objectType, out errorElementType))
+                errorElementType = objectType;
+
             //we do not have a root object, so this is probably the entry point, so we will resolve
             //a document root and return the data object
-            var documentRootType = typeof(MinimalDocumentRoot<>).MakeGenericType(objectType);
+            var documentRootType = typeof(MinimalDocumentRoot<,>).MakeGenericType(typeof(object), errorElementType);
             var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
             var dataProp = objContract.Properties.GetClosestMatchProperty("errors");
 
@@ -166,11 +172,17 @@ namespace JsonApiSerializer.JsonConverters
                 return false;
             }
 
+            //coerce single element into a list
+            if (value is IError)
+                value = new List<IError>() { (IError)value };
+
             //we do not have a root object, so this is probably the entry point, so we will resolve
             //it as a document root
-            var documentRootType = typeof(MinimalDocumentRoot<>).MakeGenericType(typeof(object));
+            var documentRootType = typeof(MinimalDocumentRoot<,>).MakeGenericType(typeof(object), typeof(IError));
             var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
             var rootObj = objContract.DefaultCreator();
+
+            
 
             //set the data property to be our current object
             var dataProp = objContract.Properties.GetClosestMatchProperty("errors");
@@ -191,7 +203,7 @@ namespace JsonApiSerializer.JsonConverters
 
             //we do not have a root object, so this is probably the entry point, so we will resolve
             //a document root and return the data object
-            var documentRootType = typeof(MinimalDocumentRoot<>).MakeGenericType(objectType);
+            var documentRootType = typeof(MinimalDocumentRoot<,>).MakeGenericType(objectType, typeof(Error));
             var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
             var dataProp = objContract.Properties.GetClosestMatchProperty("data");
 
@@ -210,7 +222,7 @@ namespace JsonApiSerializer.JsonConverters
 
             //we do not have a root object, so this is probably the entry point, so we will resolve
             //it as a document root
-            var documentRootType = typeof(MinimalDocumentRoot<>).MakeGenericType(value.GetType());
+            var documentRootType = typeof(MinimalDocumentRoot<,>).MakeGenericType(value.GetType(), typeof(Error));
             var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
             var rootObj = objContract.DefaultCreator();
 
@@ -222,11 +234,11 @@ namespace JsonApiSerializer.JsonConverters
             return true;
         }
 
-        private class MinimalDocumentRoot<T> : IDocumentRoot<T>
+        private class MinimalDocumentRoot<TData, TError> : IDocumentRoot<TData> where TError : IError
         {
-            public T Data { get; set; }
+            public TData Data { get; set; }
 
-            public IEnumerable<Error> Errors { get; set; }
+            public IEnumerable<TError> Errors { get; set; }
         }
 
     }

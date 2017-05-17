@@ -11,7 +11,7 @@ namespace JsonApiSerializer.Test.SerializationTests
     public class SerializationErrorTests
     {
         [Fact]
-        public void When_error_should_serialize_in_errors_element()
+        public void When_errors_should_serialize_in_errors_element()
         {
             var json = JsonConvert.SerializeObject(
                 new []
@@ -24,6 +24,33 @@ namespace JsonApiSerializer.Test.SerializationTests
                         {
                             Pointer = "/data/attributes/first-name"
                         }
+                    }
+                },
+                new JsonApiSerializerSettings());
+
+            Assert.Equal(@"
+{
+  ""errors"": [
+    {
+      ""source"": { ""pointer"": ""/data/attributes/first-name"" },
+      ""title"": ""Invalid Attribute"",
+      ""detail"": ""First name must contain at least three characters.""
+    }
+  ]
+}", json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
+        public void When_error_should_serialize_in_errors_element()
+        {
+            var json = JsonConvert.SerializeObject(
+                new Error()
+                {
+                    Title = "Invalid Attribute",
+                    Detail = "First name must contain at least three characters.",
+                    Source = new ErrorSource()
+                    {
+                        Pointer = "/data/attributes/first-name"
                     }
                 },
                 new JsonApiSerializerSettings());

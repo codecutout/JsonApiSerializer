@@ -36,6 +36,20 @@ namespace JsonApiSerializer.Test.DeserializationTests
         }
 
         [Fact]
+        public void When_error_should_error_single_deserialize_first_error()
+        {
+            var json = EmbeddedResource.Read("Data.Errors.single.json");
+
+            var error = JsonConvert.DeserializeObject<Error>(
+                json,
+                new JsonApiSerializerSettings());
+
+            Assert.Equal("Invalid Attribute", error.Title);
+            Assert.Equal("First name must contain at least three characters.", error.Detail);
+            Assert.Equal("/data/attributes/first-name", error.Source.Pointer);
+        }
+
+        [Fact]
         public void When_error_should_deserialize_null_object()
         {
             var json = EmbeddedResource.Read("Data.Errors.single.json");
