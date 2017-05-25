@@ -1,18 +1,11 @@
-﻿using JsonApiSerializer.JsonApi;
+﻿using System;
 using JsonApiSerializer.JsonConverters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using JsonApiSerializer.JsonApi.WellKnown;
 
-namespace JsonApiSerializer
+namespace JsonApiSerializer.ContractResolvers
 {
-    internal class JsonApiContractResolver : DefaultContractResolver
+    public class JsonApiContractResolver : DefaultContractResolver
     {
         public readonly JsonConverter ResourceObjectConverter;
 
