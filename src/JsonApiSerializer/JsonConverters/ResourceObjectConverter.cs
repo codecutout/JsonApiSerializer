@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -16,10 +17,10 @@ namespace JsonApiSerializer.JsonConverters
     /// Provides functionality to convert a JsonApi resoruce object into a .NET object
     /// </summary>
     /// <seealso cref="Newtonsoft.Json.JsonConverter" />
-    public partial class ResourceObjectConverter : JsonConverter
+    public class ResourceObjectConverter : JsonConverter
     {
-        public static Regex DataReadPathRegex = new Regex($@"^$|{PropertyNames.Included}(\[\d+\])?$|{PropertyNames.Data}(\[\d+\])?$");
-        public static Regex DataWritePathRegex = new Regex($@"{PropertyNames.Included}(\[\d+\])?$|{PropertyNames.Data}(\[\d+\])?$");
+        private static readonly Regex DataReadPathRegex = new Regex($@"^$|{PropertyNames.Included}(\[\d+\])?$|{PropertyNames.Data}(\[\d+\])?$");
+        private static readonly Regex DataWritePathRegex = new Regex($@"{PropertyNames.Included}(\[\d+\])?$|{PropertyNames.Data}(\[\d+\])?$");
 
         public override bool CanConvert(Type objectType)
         {
@@ -149,7 +150,7 @@ namespace JsonApiSerializer.JsonConverters
             if (typeProp == null)
             {
                 writer.WritePropertyName("type");
-                serializer.Serialize(writer, typeProp?.ValueProvider?.GetValue(value) ?? valueType.Name.ToLowerInvariant());
+                serializer.Serialize(writer, GenerateDefaultTypeName(valueType));
             }
 
             List<JsonWriterCapture> attributes = new List<JsonWriterCapture>();
@@ -171,7 +172,7 @@ namespace JsonApiSerializer.JsonConverters
                         break;
                     case PropertyNames.Type:
                         writer.WritePropertyName("type");
-                        serializer.Serialize(writer, typeProp?.ValueProvider?.GetValue(value) ?? valueType.Name.ToLowerInvariant());
+                        serializer.Serialize(writer, typeProp?.ValueProvider?.GetValue(value) ?? GenerateDefaultTypeName(valueType));
                         break;
                     default:
                         //we do not know if it is an Attribute or a Relationship
@@ -225,11 +226,11 @@ namespace JsonApiSerializer.JsonConverters
 
             writer.WritePropertyName(PropertyNames.Type);
             var typeProp = contract.Properties.GetClosestMatchProperty(PropertyNames.Type);
-            var typeVal = typeProp?.ValueProvider?.GetValue(value) ?? value.GetType().Name.ToLowerInvariant();
+            var typeVal = typeProp?.ValueProvider?.GetValue(value) ?? GenerateDefaultTypeName(value.GetType());
             serializer.Serialize(writer, typeVal);
 
             //we will only write the object to included if there are properties that have have data
-            //that we cant include wihtin the reference
+            //that we cant include within the reference
             var willWriteObjectToIncluded = contract.Properties.Any(prop =>
             {
                 //ignore id, type, meta and ignored properties
@@ -270,6 +271,16 @@ namespace JsonApiSerializer.JsonConverters
                 var reference = IncludedReferenceResolver.GetReferenceValue(idVal.ToString(), typeVal.ToString());
                 serializer.ReferenceResolver.AddReference(null, reference, value);
             }
+        }
+
+        /// <summary>
+        /// If there is no Type property on the item then this is called to generate a default Type name
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        protected virtual string GenerateDefaultTypeName(Type type)
+        {
+            return type.Name.ToLowerInvariant();
         }
     }
 }
