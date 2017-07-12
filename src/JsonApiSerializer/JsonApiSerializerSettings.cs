@@ -26,6 +26,7 @@ namespace JsonApiSerializer
             this.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
             this.ReferenceResolverProvider = () => new IncludedReferenceResolver();
             this.ContractResolver = new JsonApiContractResolver(resourceObjectConverter);
+            this.DateParseHandling = DateParseHandling.None;
         }
 
         /// <summary>
