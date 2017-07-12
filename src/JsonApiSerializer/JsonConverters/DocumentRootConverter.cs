@@ -74,9 +74,9 @@ namespace JsonApiSerializer.JsonConverters
             serializer.ReferenceResolver.AddReference(null, IncludedReferenceResolver.RootReference, value);
 
             var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(value.GetType());
-            
             writer.WriteStartObject();
 
+            var dataValues = new HashSet<object>();
             var propertiesOutput = new HashSet<string>();
             foreach(var prop in contract.Properties)
             {
@@ -88,6 +88,13 @@ namespace JsonApiSerializer.JsonConverters
                 var propValue = prop.ValueProvider.GetValue(value);
                 if (propValue == null && serializer.NullValueHandling == NullValueHandling.Ignore)
                     continue;
+
+                if (prop.PropertyName == PropertyNames.Data)
+                {
+                    //we will keep track of values we write as data, so we can not duplicate them
+                    //into the included values. data could bea list or a singel value
+                    dataValues = new HashSet<object>(propValue as IEnumerable<object> ?? new[] { propValue });
+                }
 
                 //A document MAY contain any of these top-level members: jsonapi, links, included
                 //We are also allowing everything else they happen to have on the root document
@@ -114,7 +121,9 @@ namespace JsonApiSerializer.JsonConverters
                 //output the included. If we have a specified included field we will out everything in there
                 //and we will also output all the references defined in our reference resolver
                 var includedReferences = serializer.ReferenceResolver as IDictionary<string, object> ?? Enumerable.Empty<KeyValuePair<string, object>>();
-                includedReferences = includedReferences.Where(x => x.Key != IncludedReferenceResolver.RootReference);
+                includedReferences = includedReferences
+                    .Where(x => x.Key != IncludedReferenceResolver.RootReference)
+                    .Where(x => !dataValues.Contains(x.Value)); //dont output values present in the data
                 var includedProperty = contract.Properties.GetClosestMatchProperty(PropertyNames.Included);
                 var includedValues = includedProperty?.ValueProvider?.GetValue(value) as IEnumerable<object> ?? Enumerable.Empty<object>();
 

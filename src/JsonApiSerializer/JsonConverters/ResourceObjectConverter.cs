@@ -145,11 +145,16 @@ namespace JsonApiSerializer.JsonConverters
             var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(valueType);
             writer.WriteStartObject();
 
+            //will capture id and type as we go through
+            object id = null;
+            object type = null;
+
             //A resource object MUST contain at least the following top-level members: type
             var typeProp = contract.Properties.GetClosestMatchProperty("type");
             if (typeProp == null)
             {
                 writer.WritePropertyName("type");
+                type = GenerateDefaultTypeName(valueType);
                 serializer.Serialize(writer, GenerateDefaultTypeName(valueType));
             }
 
@@ -164,15 +169,20 @@ namespace JsonApiSerializer.JsonConverters
                 switch (prop.PropertyName)
                 {
                     //In addition, a resource object MAY contain any of these top - level members: links, meta, attributes, relationships
+                    case PropertyNames.Id: //Id is optional on base objects
+                        id = propValue;
+                        writer.WritePropertyName(prop.PropertyName);
+                        serializer.Serialize(writer, id);
+                        break;
                     case PropertyNames.Links:
                     case PropertyNames.Meta:
-                    case PropertyNames.Id: //Id is optional on base objects, so we will put it with the other optional properties
                         writer.WritePropertyName(prop.PropertyName);
                         serializer.Serialize(writer, propValue);
                         break;
                     case PropertyNames.Type:
                         writer.WritePropertyName("type");
-                        serializer.Serialize(writer, typeProp?.ValueProvider?.GetValue(value) ?? GenerateDefaultTypeName(valueType));
+                        type = typeProp?.ValueProvider?.GetValue(value) ?? GenerateDefaultTypeName(valueType);
+                        serializer.Serialize(writer, type);
                         break;
                     default:
                         //we do not know if it is an Attribute or a Relationship
@@ -187,6 +197,10 @@ namespace JsonApiSerializer.JsonConverters
                         break;
                 }
             }
+
+            //add reference to this type, so others can reference it
+            var referenceValue = IncludedReferenceResolver.GetReferenceValue(id?.ToString(), type?.ToString());
+            serializer.ReferenceResolver.AddReference(null, referenceValue, value);
 
             //output our attibutes in an attribute tag
             if (attributes.Count > 0)
