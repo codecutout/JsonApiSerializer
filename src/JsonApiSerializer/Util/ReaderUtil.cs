@@ -69,7 +69,7 @@ namespace JsonApiSerializer.Util
                     ? $"The value of the '{propName}' key MUST be an object"
                     : null;
                 throw new JsonApiFormatException(reader.Path, 
-                    $"Expected to find json object at {reader.Path}", 
+                    $"Expected to find json object at path '{reader.Path}'", 
                     specInfo);
             }
                 
