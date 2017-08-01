@@ -35,5 +35,18 @@ namespace JsonApiSerializer.Util
             return info.GetProperty(property, BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public);
 #endif
         }
+
+        public static PropertyInfo GetPropertyFromInhertianceChain(TypeInfo info, string property)
+        {
+            var propInfo = GetProperty(info, property);
+            if (propInfo == null && info.IsInterface)
+                propInfo = GetInterfaces(info)
+                    .Select(t => GetProperty(t.GetTypeInfo(), property))
+                    .FirstOrDefault(p => p != null);
+
+            return propInfo;
+        }
+
+
     }
 }
