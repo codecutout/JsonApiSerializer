@@ -69,7 +69,7 @@ namespace JsonApiSerializer.Util
                     ? $"The value of the '{propName}' key MUST be an object"
                     : null;
                 throw new JsonApiFormatException(reader.Path, 
-                    $"Expected to find json object at {reader.Path}", 
+                    $"Expected to find json object at path '{reader.Path}'", 
                     specInfo);
             }
                 
@@ -209,6 +209,7 @@ namespace JsonApiSerializer.Util
                 {
                     case JsonToken.EndObject:
                     case JsonToken.EndArray:
+                    case JsonToken.Null:
                         if (reader.Path == path)
                             return;
                         break;
@@ -218,7 +219,7 @@ namespace JsonApiSerializer.Util
                 }
             } while (reader.Read());
 
-            throw new JsonApiFormatException(path, $"Unable to find closing element element");
+            throw new JsonApiFormatException(path, $"Unable to find closing element for item at path '{path}'");
         }
     }
 }

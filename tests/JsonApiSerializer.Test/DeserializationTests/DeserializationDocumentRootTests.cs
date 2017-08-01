@@ -117,12 +117,31 @@ namespace JsonApiSerializer.Test.DeserializationTests
         {
             var json = EmbeddedResource.Read("Data.Articles.sample-out-of-order.json");
 
-            var settings = new JsonApiSerializerSettings();
             var articles = JsonConvert.DeserializeObject<Article[]>(
                 json,
                 new JsonApiSerializerSettings());
 
             AssertArticlesMatchData(articles);
+        }
+
+        [Fact]
+        public void When_json_null_should_deserialize()
+        {
+            var article = JsonConvert.DeserializeObject<Article>(
+                @"{""data"": null}",
+                new JsonApiSerializerSettings());
+
+            Assert.Null(article);
+        }
+
+        [Fact]
+        public void When_list_json_null_should_deserialize_as_empty()
+        {
+            var articles = JsonConvert.DeserializeObject<Article[]>(
+                @"{""data"": null}",
+                new JsonApiSerializerSettings());
+
+            Assert.Empty(articles);
         }
 
 
