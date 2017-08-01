@@ -24,7 +24,7 @@ namespace JsonApiSerializer.JsonConverters
 
         public override bool CanConvert(Type objectType)
         {
-            return TypeInfoShim.GetProperty(objectType.GetTypeInfo(), "Id") != null;
+            return TypeInfoShim.GetPropertyFromInhertianceChain(objectType.GetTypeInfo(), "Id") != null;
             
         }
 
