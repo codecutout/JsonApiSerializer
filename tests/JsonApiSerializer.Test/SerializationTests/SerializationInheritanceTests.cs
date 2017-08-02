@@ -26,6 +26,7 @@ namespace JsonApiSerializer.Test.SerializationTests
         public IEnumerable<ILocationWithId> Parents { get; set; }
     }
 
+
     public class SerializationInheritanceTests
     {
         public JsonApiSerializerSettings settings = new JsonApiSerializerSettings()
@@ -58,7 +59,7 @@ namespace JsonApiSerializer.Test.SerializationTests
 
 
             var json = JsonConvert.SerializeObject(root, settings);
-           
+
             Assert.Equal(@"{
             ""data"": {
                 ""type"": ""locationwithid"",
@@ -91,6 +92,51 @@ namespace JsonApiSerializer.Test.SerializationTests
             }
             ]
         }", json, JsonStringEqualityComparer.Instance);
+        }
+
+
+
+        public interface ILineItem { }
+
+        public class LineItem : ILineItem
+        {
+            public string Id { get; set; }
+        }
+
+        public class Order
+        {
+            public string Id { get; set; }
+            public IEnumerable<ILineItem> Lines { get; set; }
+        }
+
+
+        [Fact]
+        public void When_covariant_list_with_no_id_should_serialize_as_attribute()
+        {
+            var root = new Order
+            {
+                Id = "order",
+                Lines = new ILineItem[]{
+                    new LineItem {Id="123"}
+                }
+            };
+
+
+            var json = JsonConvert.SerializeObject(root, settings);
+
+            Assert.Equal(@"{
+  ""data"": {
+    ""type"": ""order"",
+    ""id"": ""order"",
+    ""attributes"": {
+      ""lines"": [
+        {
+          ""id"": ""123""
+        }
+      ]
+    }
+  }
+}", json, JsonStringEqualityComparer.Instance);
         }
     }
 }
