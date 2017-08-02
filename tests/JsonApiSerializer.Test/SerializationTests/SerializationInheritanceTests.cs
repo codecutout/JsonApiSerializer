@@ -92,5 +92,46 @@ namespace JsonApiSerializer.Test.SerializationTests
             ]
         }", json, JsonStringEqualityComparer.Instance);
         }
+
+        [Fact]
+        public void When_linqed_list_should_serialize()
+        {
+            int selectCount = 0;
+            var root = new LocationWithId()
+            {
+                Id = "Willesdon Green",
+                Parents = Enumerable.Range(0, 3).Select(i => new LocationWithId()
+                {
+                    Id = $"London_{i}_{selectCount++}"
+                })
+            };
+
+            var json = JsonConvert.SerializeObject(root, settings);
+            Assert.Equal(3, selectCount); //should evaluate IEnumerable only once
+            Assert.Equal(@"{
+            ""data"": {
+                ""type"": ""locationwithid"",
+                ""id"": ""Willesdon Green"",
+                ""relationships"": {
+                    ""parents"": {
+                        ""data"": [
+                            {
+                                ""id"": ""London_0_0"",
+                                ""type"": ""locationwithid""
+                            },
+                            {
+                                ""id"": ""London_1_1"",
+                                ""type"": ""locationwithid""
+                            },
+                            {
+                                ""id"": ""London_2_2"",
+                                ""type"": ""locationwithid""
+                            }
+                        ]
+                    }
+                }
+            }
+        }", json, JsonStringEqualityComparer.Instance);
+        }
     }
 }

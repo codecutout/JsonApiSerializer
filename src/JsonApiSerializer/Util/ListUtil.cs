@@ -24,7 +24,7 @@ namespace JsonApiSerializer.Util
         /// <returns>
         ///   <c>true</c> if the specified type is list; otherwise, <c>false</c>.
         /// </returns>
-            public static bool IsList(Type type, out Type elementType)
+        public static bool IsList(Type type, out Type elementType)
         {
             if (type.IsArray)
             {
@@ -33,14 +33,15 @@ namespace JsonApiSerializer.Util
             }
 
             var typeInfo = type.GetTypeInfo();
-            if (typeInfo.IsGenericType)
+            if (type != typeof(string) && typeof(IEnumerable).GetTypeInfo().IsAssignableFrom(typeInfo))
             {
-                var listType = typeInfo.GetGenericTypeDefinition();
-                elementType = typeInfo.GenericTypeArguments[0];
-                if (typeof(IEnumerable<>).MakeGenericType(elementType).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()))
-                    return true;
-            }
+                var genericEnumerableType = new[] { type }.Concat(TypeInfoShim.GetInterfaces(typeInfo))
+                    .Select(t=>t.GetTypeInfo())
+                    .FirstOrDefault(ti => ti.IsGenericType && ti.GetGenericTypeDefinition() == typeof(IEnumerable<>));
 
+                elementType = genericEnumerableType?.GenericTypeArguments[0] ?? typeof(object);
+                return true;
+            }
 
             elementType = null;
             return false;
