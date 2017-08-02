@@ -24,7 +24,10 @@ namespace JsonApiSerializer.ReferenceResolvers
             return GetReferenceValue(jobj[PropertyNames.Id].ToString(), jobj[PropertyNames.Type].ToString());
         }
 
-        public object root { get; set; }
+        /// <summary>
+        /// List to keep track of which references we have outputted during serialization
+        /// </summary>
+        public HashSet<string> RenderedReferences = new HashSet<string>();
 
         public void AddReference(object context, string reference, object value)
         {

@@ -201,6 +201,7 @@ namespace JsonApiSerializer.JsonConverters
             //add reference to this type, so others can reference it
             var referenceValue = IncludedReferenceResolver.GetReferenceValue(id?.ToString(), type?.ToString());
             serializer.ReferenceResolver.AddReference(null, referenceValue, value);
+            (serializer.ReferenceResolver as IncludedReferenceResolver)?.RenderedReferences?.Add(referenceValue);
 
             //output our attibutes in an attribute tag
             if (attributes.Count > 0)
