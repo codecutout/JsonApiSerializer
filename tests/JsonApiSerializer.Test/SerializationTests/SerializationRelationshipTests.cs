@@ -1,5 +1,6 @@
 ﻿using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.Test.Models.Articles;
+using JsonApiSerializer.Test.Models.Locations;
 using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
 using System;
@@ -287,6 +288,124 @@ namespace JsonApiSerializer.Test.SerializationTests
                     }
                 ]
             }";
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
+
+
+        [Fact]
+        public void When_object_reference_relationships_are_in_data_should_not_be_in_includes()
+        {
+            var london = new LocationWithId() { Id = "London", Description = "Capital"  };
+            var kingsCross = new LocationWithId() { Id = "Kings-Cross", Parents = new[] { london } };
+            var farringdon = new LocationWithId() { Id = "Farringdon", Parents = new[] { london } };
+
+            var root = new[]
+            {
+                london,
+                kingsCross,
+                farringdon
+            };
+
+            var json = JsonConvert.SerializeObject(root, settings);
+            var expectedjson = @"{
+  ""data"": [
+    {
+      ""type"": ""locationwithid"",
+      ""id"": ""London"",
+      ""attributes"": {
+        ""description"": ""Capital""
+      }
+    },
+    {
+      ""type"": ""locationwithid"",
+      ""id"": ""Kings-Cross"",
+      ""relationships"": {
+        ""parents"": {
+          ""data"": [
+            {
+              ""id"": ""London"",
+              ""type"": ""locationwithid""
+            }
+          ]
+        }
+      }
+    },
+    {
+      ""type"": ""locationwithid"",
+      ""id"": ""Farringdon"",
+      ""relationships"": {
+        ""parents"": {
+          ""data"": [
+            {
+              ""id"": ""London"",
+              ""type"": ""locationwithid""
+            }
+          ]
+        }
+      }
+    }
+  ]
+}";
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
+        public void When_id_reference_relationships_are_in_data_should_not_be_in_includes()
+        {
+            var root = new[]
+            {
+                new LocationWithId() { Id = "London", Description ="Capital" },
+                new LocationWithId() {
+                    Id = "Kings-Cross",
+                    Parents = new[] { new LocationWithId() { Id = "London", Description= "Capital" } }
+                },
+                new LocationWithId() {
+                    Id = "Farringdon",
+                    Parents = new[] { new LocationWithId() { Id = "London", Description = "Capital" } }
+                },
+                
+            };
+
+            var json = JsonConvert.SerializeObject(root, settings);
+            var expectedjson = @"{
+  ""data"": [
+    {
+      ""type"": ""locationwithid"",
+      ""id"": ""London"",
+      ""attributes"": {
+        ""description"": ""Capital""
+      }
+    },
+    {
+      ""type"": ""locationwithid"",
+      ""id"": ""Kings-Cross"",
+      ""relationships"": {
+        ""parents"": {
+          ""data"": [
+            {
+              ""id"": ""London"",
+              ""type"": ""locationwithid""
+            }
+          ]
+        }
+      }
+    },
+    {
+      ""type"": ""locationwithid"",
+      ""id"": ""Farringdon"",
+      ""relationships"": {
+        ""parents"": {
+          ""data"": [
+            {
+              ""id"": ""London"",
+              ""type"": ""locationwithid""
+            }
+          ]
+        }
+      }
+    }
+  ]
+}";
             Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
         }
     }
