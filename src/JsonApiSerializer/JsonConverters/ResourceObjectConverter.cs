@@ -13,6 +13,12 @@ using Newtonsoft.Json.Serialization;
 
 namespace JsonApiSerializer.JsonConverters
 {
+    public enum EmptyResourceObjectRelationshipSerializationBehaviour
+    {
+        SuppressFromIncludes,
+        AppendToIncludes,
+    }
+
     /// <summary>
     /// Provides functionality to convert a JsonApi resoruce object into a .NET object
     /// </summary>
@@ -21,6 +27,10 @@ namespace JsonApiSerializer.JsonConverters
     {
         private static readonly Regex DataReadPathRegex = new Regex($@"^$|{PropertyNames.Included}(\[\d+\])?$|{PropertyNames.Data}(\[\d+\])?$");
         private static readonly Regex DataWritePathRegex = new Regex($@"{PropertyNames.Included}(\[\d+\])?$|{PropertyNames.Data}(\[\d+\])?$");
+
+        public EmptyResourceObjectRelationshipSerializationBehaviour EmptyResourceObjectRelationshipSerializationBehaviour { get; set; } =
+            EmptyResourceObjectRelationshipSerializationBehaviour.SuppressFromIncludes;
+
 
         public override bool CanConvert(Type objectType)
         {
@@ -246,7 +256,8 @@ namespace JsonApiSerializer.JsonConverters
 
             //we will only write the object to included if there are properties that have have data
             //that we cant include within the reference
-            var willWriteObjectToIncluded = contract.Properties.Any(prop =>
+            var willWriteObjectToIncluded = EmptyResourceObjectRelationshipSerializationBehaviour == EmptyResourceObjectRelationshipSerializationBehaviour.AppendToIncludes
+                || contract.Properties.Any(prop =>
             {
                 //ignore id, type, meta and ignored properties
                 if (prop.PropertyName == PropertyNames.Id
