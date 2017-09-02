@@ -93,6 +93,16 @@ namespace JsonApiSerializer.Util
         }
 
         /// <summary>
+        /// Determines if the property is able to be populated
+        /// </summary>
+        /// <param name="property"></param>
+        /// <returns></returns>
+        public static bool CanPopulateProperty(JsonProperty property)
+        {
+            return !(property == null || property.Ignored || !property.Writable);
+        }
+
+        /// <summary>
         /// Attempt to populate the property with the value from the serializer
         /// </summary>
         /// <param name="serializer"></param>
@@ -102,7 +112,7 @@ namespace JsonApiSerializer.Util
         /// <returns><c>True</c> if the property could be set otherwise <c>false</c></returns>
         public static bool TryPopulateProperty(JsonSerializer serializer, object obj, JsonProperty property, JsonReader value)
         {
-            if (property == null || property.Ignored || !property.Writable)
+            if (!CanPopulateProperty(property))
             {
                 return false;
             }
