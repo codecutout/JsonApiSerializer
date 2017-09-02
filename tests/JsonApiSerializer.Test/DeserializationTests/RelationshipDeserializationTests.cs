@@ -1,4 +1,5 @@
-﻿using JsonApiSerializer.Test.Models.Articles;
+﻿using JsonApiSerializer.JsonApi;
+using JsonApiSerializer.Test.Models.Articles;
 using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
 using System;
@@ -55,6 +56,34 @@ namespace JsonApiSerializer.Test.DeserializationTests
             var article = articles[0];
             Assert.Equal(null, article.Author);
             Assert.Equal(0, article.Comments.Count);
+        }
+
+        [Fact]
+        public void When_relationship_dictionary_should_deserialize()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.sample.json");
+
+            var articlesRoot = JsonConvert.DeserializeObject<DocumentRoot<ArticleWithRelationshipDictionary[]>>(
+                json,
+                new JsonApiSerializerSettings());
+
+
+            var comments = (dynamic)articlesRoot.Data[0].Relationships["comments"].Data;
+            Assert.Equal("5", comments[0].id.ToString());
+            Assert.Equal("comments", comments[0].type.ToString());
+            Assert.Equal("12", comments[1].id.ToString());
+            Assert.Equal("comments", comments[1].type.ToString());
+
+            var author = (dynamic)articlesRoot.Data[0].Relationships["author"].Data;
+            Assert.Equal("9", author.id.ToString());
+            Assert.Equal("people", author.type.ToString());
+
+            Assert.Equal(3, articlesRoot.Included.Count);
+            Assert.True(articlesRoot.Included.Any(x => x["id"].ToString() == "5" && x["type"].ToString() == "comments"));
+            Assert.True(articlesRoot.Included.Any(x => x["id"].ToString() == "12" && x["type"].ToString() == "comments"));
+            Assert.True(articlesRoot.Included.Any(x => x["id"].ToString() == "9" && x["type"].ToString() == "people"));
+
+
         }
 
 

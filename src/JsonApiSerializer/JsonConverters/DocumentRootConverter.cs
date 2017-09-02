@@ -56,10 +56,20 @@ namespace JsonApiSerializer.JsonConverters
                         contract.Properties.GetClosestMatchProperty(PropertyNames.Data).ValueProvider.SetValue(rootObject, dataObj);
                         break;
                     case PropertyNames.Included:
+
+                        //if our object has an included property we will do our best to populate it
+                        var property = contract.Properties.GetClosestMatchProperty(propName);
+                        if(ReaderUtil.CanPopulateProperty(property))
+                        {
+                            ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), ((ForkableJsonReader)reader).Fork());
+                        }
+
+                        //still need to read our values so they are updated
                         foreach (var obj in ReaderUtil.IterateList(reader))
                         {
                             var includedObject = includedConverter.ReadJson(reader, typeof(object), null, serializer);
                         }
+                       
                         break;
                     default:
                         ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), reader);
@@ -121,13 +131,15 @@ namespace JsonApiSerializer.JsonConverters
                 var includedValues = includedProperty?.ValueProvider?.GetValue(value) as IEnumerable<object> ?? Enumerable.Empty<object>();
 
                 //if we have some references we will output them
-                if (includedReferences.Any())
+                if (includedReferences.Any() || includedValues.Any())
                 {
                     writer.WritePropertyName(PropertyNames.Included);
                     writer.WriteStartArray();
 
                     foreach (var includedValue in includedValues)
+                    {
                         serializer.Serialize(writer, includedValue);
+                    }
 
                     //I know we can alter the OrderedDictionary while enumerating it, otherwise this would error
                     foreach (var includedReference in includedReferences)
