@@ -12,6 +12,8 @@ string json = JsonConvert.SerializeObject(articles, new JsonApiSerializerSetting
 Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
 ```
 
+[![NuGet version](https://badge.fury.io/nu/JsonApiSerializer.svg)](https://badge.fury.io/nu/JsonApiSerializer)
+
 ## Example
 
 Given an object model like:
