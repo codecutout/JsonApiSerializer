@@ -95,8 +95,19 @@ namespace JsonApiSerializer.JsonConverters
 
                 //respect the serializers null handling value
                 var propValue = prop.ValueProvider.GetValue(value);
-                if (propValue == null && serializer.NullValueHandling == NullValueHandling.Ignore)
-                    continue;
+                if (propValue == null)
+                {
+                    if (prop.NullValueHandling != null)
+                    {
+                        if (prop.NullValueHandling == NullValueHandling.Ignore)
+                            continue;
+                    }
+                    else
+                    {
+                        if (serializer.NullValueHandling == NullValueHandling.Ignore)
+                            continue;
+                    }
+                }
 
                 //A document MAY contain any of these top-level members: jsonapi, links, included
                 //We are also allowing everything else they happen to have on the root document

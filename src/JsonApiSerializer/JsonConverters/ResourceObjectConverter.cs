@@ -163,8 +163,19 @@ namespace JsonApiSerializer.JsonConverters
             foreach (var prop in contract.Properties.Where(x=>!x.Ignored))
             {
                 var propValue = prop.ValueProvider.GetValue(value);
-                if (propValue == null && serializer.NullValueHandling == NullValueHandling.Ignore)
-                    continue;
+                if (propValue == null)
+                {
+                    if (prop.NullValueHandling != null)
+                    {
+                        if (prop.NullValueHandling == NullValueHandling.Ignore)
+                            continue;
+                    }
+                    else
+                    {
+                        if (serializer.NullValueHandling == NullValueHandling.Ignore)
+                            continue;
+                    }
+                }
 
                 switch (prop.PropertyName)
                 {
@@ -257,9 +268,19 @@ namespace JsonApiSerializer.JsonConverters
 
                 //ignore null properties
                 var propValue = prop.ValueProvider.GetValue(value);
-                if (propValue == null && serializer.NullValueHandling == NullValueHandling.Ignore)
-                    return false;
-
+                if (propValue == null)
+                {
+                    if (prop.NullValueHandling != null)
+                    {
+                        if (prop.NullValueHandling == NullValueHandling.Ignore)
+                            return false;
+                    }
+                    else
+                    {
+                        if (serializer.NullValueHandling == NullValueHandling.Ignore)
+                            return false;
+                    }
+                }
                 //we have another property with a value
                 return true;
             });
