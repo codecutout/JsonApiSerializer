@@ -56,5 +56,71 @@ namespace JsonApiSerializer.Test.SerializationTests
 }".Trim(), json);
         }
 
+
+
+        [Fact]
+        public void When_fields_controlled_by_jsonnet_nullinclude_attributes_should_include_null()
+        {
+            var root = new DocumentRoot<ArticleWithNullIncludeProperties>
+            {
+                Data = new ArticleWithNullIncludeProperties
+                {
+                    Id = "1234", 
+                    Title = null, //default NullValueHandling
+                    Author = null, //NullValueHandling.Ignore
+                    Comments = null //NullValueHandling.Include
+                }
+            };
+
+            var json = JsonConvert.SerializeObject(root, settings);
+
+            Assert.Equal(@"
+{
+  ""data"": {
+    ""type"": ""articles"",
+    ""id"": ""1234"",
+    ""attributes"": {
+      ""comments"": null
+    }
+  }
+}".Trim(), json);
+        }
+
+        [Fact]
+        public void When_fields_controlled_by_jsonnet_nullignore_attributes_should_ignore_null()
+        {
+            var root = new DocumentRoot<ArticleWithNullIncludeProperties>
+            {
+                Data = new ArticleWithNullIncludeProperties
+                {
+                    Id = "1234",
+                    Title = null, //default NullValueHandling
+                    Author = null, //NullValueHandling.Ignore
+                    Comments = null //NullValueHandling.Include
+                }
+            };
+
+
+            var newSettings = new JsonApiSerializerSettings()
+            {
+                Formatting = Formatting.Indented, //pretty print makes it easier to debug
+                NullValueHandling = NullValueHandling.Include
+            };
+            var json = JsonConvert.SerializeObject(root, newSettings);
+
+            Assert.Equal(@"
+{
+  ""data"": {
+    ""type"": ""articles"",
+    ""id"": ""1234"",
+    ""links"": null,
+    ""attributes"": {
+      ""title"": null,
+      ""comments"": null
+    }
+  }
+}".Trim(), json);
+        }
+
     }
 }

@@ -16,17 +16,20 @@ namespace JsonApiSerializer.JsonApi
     /// <seealso cref="JsonApiSerializer.JsonApi.WellKnown.IDocumentRoot{TData}" />
     public class DocumentRoot<TData> : IDocumentRoot<TData>
     {
-        [JsonProperty(propertyName: "jsonapi")]
+        [JsonProperty(propertyName: "jsonapi", NullValueHandling = NullValueHandling.Ignore)]
         public VersionInfo JsonApi { get; set; }
 
         public TData Data { get; set; }
 
         public List<JObject> Included { get; set; }
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<Error> Errors { get; set; }
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public Links Links { get; set; }
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public Meta Meta { get; set; }
     }
 }
