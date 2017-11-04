@@ -95,19 +95,8 @@ namespace JsonApiSerializer.JsonConverters
 
                 //respect the serializers null handling value
                 var propValue = prop.ValueProvider.GetValue(value);
-                if (propValue == null)
-                {
-                    if (prop.NullValueHandling != null)
-                    {
-                        if (prop.NullValueHandling == NullValueHandling.Ignore)
-                            continue;
-                    }
-                    else
-                    {
-                        if (serializer.NullValueHandling == NullValueHandling.Ignore)
-                            continue;
-                    }
-                }
+                if (propValue == null && (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
+                    continue;
 
                 //A document MAY contain any of these top-level members: jsonapi, links, included
                 //We are also allowing everything else they happen to have on the root document
@@ -263,6 +252,7 @@ namespace JsonApiSerializer.JsonConverters
         {
             public TData Data { get; set; }
 
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public IEnumerable<TError> Errors { get; set; }
         }
 

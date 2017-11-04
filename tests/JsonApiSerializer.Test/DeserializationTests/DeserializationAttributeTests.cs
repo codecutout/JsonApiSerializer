@@ -20,7 +20,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
     public class DeserializationAttributeTests
     {
         [Fact]
-        public void When_fields_controlled_by_jsonnet_attributes_should_respect_attributes()
+        public void When_fields_controlled_by_jsonnet_ignore_attribute_should_ignore()
         {
             var json = EmbeddedResource.Read("Data.Articles.single-item.json");
 

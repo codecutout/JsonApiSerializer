@@ -47,19 +47,8 @@ namespace JsonApiSerializer.JsonConverters
             foreach (var prop in contract.Properties.Where(x => !x.Ignored))
             {
                 var propValue = prop.ValueProvider.GetValue(value);
-                if (propValue == null)
-                {
-                    if (prop.NullValueHandling != null)
-                    {
-                        if (prop.NullValueHandling == NullValueHandling.Ignore)
-                            continue;
-                    }
-                    else
-                    {
-                        if (serializer.NullValueHandling == NullValueHandling.Ignore)
-                            continue;
-                    }
-                }
+                if (propValue == null && (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
+                    continue;
                 outputProperties.Add(new KeyValuePair<string, object>(prop.PropertyName, propValue));
               
             }
