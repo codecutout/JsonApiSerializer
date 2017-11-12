@@ -30,7 +30,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
                 new JsonApiSerializerSettings());
 
             Assert.Equal("1", article.Id);
-            Assert.Equal(null, article.Title); //ignored
+            Assert.Null(article.Title); //ignored
 
             var author = article.Author;
             Assert.Equal("9", author.Id);
@@ -38,7 +38,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
             Assert.Equal("Gebhardt", author.LastName);
             Assert.Equal("dgeb", author.Twitter);
 
-            Assert.Equal(null, article.Comments); //ignored
+            Assert.Null(article.Comments); //ignored
         }
 
         [Fact]
@@ -52,7 +52,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
                 new JsonApiSerializerSettings());
 
             Assert.Equal("1", article.Id);
-            Assert.Equal(null, article.Title); //ignored
+            Assert.Null(article.Title); //ignored
 
             var author = article.Author;
             Assert.Equal("9", author.Id);
@@ -60,7 +60,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
             Assert.Equal("Gebhardt", author.LastName);
             Assert.Equal("dgeb", author.Twitter);
 
-            Assert.Equal(null, article.Comments); //ignored
+            Assert.Null(article.Comments); //ignored
         }
 
     }

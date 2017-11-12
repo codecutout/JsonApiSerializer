@@ -28,7 +28,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
                 json,
                 new JsonApiSerializerSettings());
 
-            Assert.Equal(1, errors.Length);
+            Assert.Single(errors);
             var error = errors[0];
             Assert.Equal("Invalid Attribute", error.Title);
             Assert.Equal("First name must contain at least three characters.", error.Detail);

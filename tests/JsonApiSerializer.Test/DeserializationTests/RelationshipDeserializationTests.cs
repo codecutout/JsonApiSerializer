@@ -54,8 +54,8 @@ namespace JsonApiSerializer.Test.DeserializationTests
 
             var articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
             var article = articles[0];
-            Assert.Equal(null, article.Author);
-            Assert.Equal(0, article.Comments.Count);
+            Assert.Null(article.Author);
+            Assert.Empty(article.Comments);
         }
 
         [Fact]
@@ -79,9 +79,9 @@ namespace JsonApiSerializer.Test.DeserializationTests
             Assert.Equal("people", author.type.ToString());
 
             Assert.Equal(3, articlesRoot.Included.Count);
-            Assert.True(articlesRoot.Included.Any(x => x["id"].ToString() == "5" && x["type"].ToString() == "comments"));
-            Assert.True(articlesRoot.Included.Any(x => x["id"].ToString() == "12" && x["type"].ToString() == "comments"));
-            Assert.True(articlesRoot.Included.Any(x => x["id"].ToString() == "9" && x["type"].ToString() == "people"));
+            Assert.Contains(articlesRoot.Included, x => x["id"].ToString() == "5" && x["type"].ToString() == "comments");
+            Assert.Contains(articlesRoot.Included, x => x["id"].ToString() == "12" && x["type"].ToString() == "comments");
+            Assert.Contains(articlesRoot.Included, x => x["id"].ToString() == "9" && x["type"].ToString() == "people");
 
 
         }

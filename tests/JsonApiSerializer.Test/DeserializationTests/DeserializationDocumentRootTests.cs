@@ -148,16 +148,16 @@ namespace JsonApiSerializer.Test.DeserializationTests
 
         private void AssertArticlesMatchData<T>(DocumentRoot<T> articleRoot) where T : IEnumerable<Article>
         {
-            Assert.Equal(articleRoot.Links["self"].Href, "http://example.com/articles");
-            Assert.Equal(articleRoot.Links["next"].Href, "http://example.com/articles?page[offset]=2");
-            Assert.Equal(articleRoot.Links["last"].Href, "http://example.com/articles?page[offset]=10");
+            Assert.Equal("http://example.com/articles", articleRoot.Links["self"].Href);
+            Assert.Equal("http://example.com/articles?page[offset]=2", articleRoot.Links["next"].Href);
+            Assert.Equal("http://example.com/articles?page[offset]=10", articleRoot.Links["last"].Href);
             AssertArticlesMatchData(articleRoot.Data);
         }
 
         private void AssertArticlesMatchData(IEnumerable<Article> articles)
         {
             var articlesList = articles as List<Article> ?? articles.ToList();
-            Assert.Equal(1, articlesList.Count);
+            Assert.Single(articlesList);
 
             var article = articlesList[0];
             Assert.Equal("1", article.Id);

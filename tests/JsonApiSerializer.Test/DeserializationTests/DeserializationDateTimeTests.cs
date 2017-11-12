@@ -50,15 +50,17 @@ namespace JsonApiSerializer.Test.DeserializationTests
 ";
             var settings = new JsonApiSerializerSettings();
             var dateTimes = JsonConvert.DeserializeObject<DateTimes>(json,settings);
-     
+
+            //Not happy with the behaviour to deserialize DateTime into DateTimeKind.Local, 
+            //but it is the Json.NET default
             Assert.Equal("2017-01-01T12:00:00+02:00", dateTimes.DateTimeOffset.ToString("yyyy-MM-ddTHH:mm:sszzz"));
-            Assert.Equal("2017-01-01T10:00:00", dateTimes.DateTime.ToString("yyyy-MM-ddTHH:mm:ss"));
+            Assert.Equal("2017-01-01T10:00:00", dateTimes.DateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss"));
             Assert.Equal("2017-01-01T12:00:00+02:00", dateTimes.NullableDateTimeOffset?.ToString("yyyy-MM-ddTHH:mm:sszzz"));
-            Assert.Equal("2017-01-01T10:00:00", dateTimes.NullableDateTime?.ToString("yyyy-MM-ddTHH:mm:ss"));
+            Assert.Equal("2017-01-01T10:00:00", dateTimes.NullableDateTime?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss"));
         }
 
         [Fact]
-        public void When_DateTime_should_deserialize_with_zero_offset()
+        public void When_DateTime_should_deserialize_with_local_offset()
         {
             var json = @"
 {
@@ -74,11 +76,15 @@ namespace JsonApiSerializer.Test.DeserializationTests
 }
 ";
             var settings = new JsonApiSerializerSettings();
+            var localOffset = new DateTimeOffset(new DateTime(0), TimeZoneInfo.Local.BaseUtcOffset).ToString("zzz");
+
             var dateTimes = JsonConvert.DeserializeObject<DateTimes>(json, settings);
 
-            Assert.Equal("2017-01-01T12:00:00+00:00", dateTimes.DateTimeOffset.ToString("yyyy-MM-ddTHH:mm:sszzz"));
+            //Not happy with the behaviour to use local offset if an offset isnt defined
+            //but it is the Json.NET default
+            Assert.Equal($"2017-01-01T12:00:00{localOffset}", dateTimes.DateTimeOffset.ToString("yyyy-MM-ddTHH:mm:sszzz"));
             Assert.Equal("2017-01-01T12:00:00", dateTimes.DateTime.ToString("yyyy-MM-ddTHH:mm:ss"));
-            Assert.Equal("2017-01-01T12:00:00+00:00", dateTimes.NullableDateTimeOffset?.ToString("yyyy-MM-ddTHH:mm:sszzz"));
+            Assert.Equal($"2017-01-01T12:00:00{localOffset}", dateTimes.NullableDateTimeOffset?.ToString("yyyy-MM-ddTHH:mm:sszzz"));
             Assert.Equal("2017-01-01T12:00:00", dateTimes.NullableDateTime?.ToString("yyyy-MM-ddTHH:mm:ss"));
         }
 
@@ -101,8 +107,8 @@ namespace JsonApiSerializer.Test.DeserializationTests
             var settings = new JsonApiSerializerSettings();
             var dateTimes = JsonConvert.DeserializeObject<DateTimes>(json, settings);
 
-            Assert.Equal(null, dateTimes.NullableDateTimeOffset?.ToString("yyyy-MM-ddTHH:mm:sszzz"));
-            Assert.Equal(null, dateTimes.NullableDateTime?.ToString("yyyy-MM-ddTHH:mm:ss"));
+            Assert.Null(dateTimes.NullableDateTimeOffset?.ToString("yyyy-MM-ddTHH:mm:sszzz"));
+            Assert.Null(dateTimes.NullableDateTime?.ToString("yyyy-MM-ddTHH:mm:ss"));
         }
 
         [Fact]
