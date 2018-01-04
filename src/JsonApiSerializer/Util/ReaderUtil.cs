@@ -117,7 +117,10 @@ namespace JsonApiSerializer.Util
                 return false;
             }
 
-            var valueObj = serializer.Deserialize(value, property.PropertyType);
+            var valueObj = property.MemberConverter != null && property.MemberConverter.CanRead
+                ? property.MemberConverter.ReadJson(value, property.PropertyType, null, serializer)
+                : serializer.Deserialize(value, property.PropertyType);
+
             property.ValueProvider.SetValue(obj, valueObj);
             return true;
         }

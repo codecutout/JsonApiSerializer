@@ -26,5 +26,13 @@ namespace JsonApiSerializer.Util
                 writer.WriteEndObject();
             }
         }
+
+        internal static void WritePropertyValue(JsonSerializer serializer, JsonProperty property, object propValue, JsonWriter writer)
+        {
+            if (property.MemberConverter != null && property.MemberConverter.CanWrite)
+                property.MemberConverter.WriteJson(writer, propValue, serializer);
+            else
+                serializer.Serialize(writer, propValue);
+        }
     }
 }
