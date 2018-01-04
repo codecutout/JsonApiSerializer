@@ -189,7 +189,7 @@ namespace JsonApiSerializer.JsonConverters
                         //so we will send out a probe to determine which one it is
                         var probe = new AttributeOrRelationshipProbe();
                         probe.WritePropertyName(prop.PropertyName);
-                        serializer.Serialize(probe, propValue);
+                        WriterUtil.WritePropertyValue(serializer, prop, propValue, probe);
 
                         (probe.PropertyType == AttributeOrRelationshipProbe.Type.Attribute
                             ? attributes
