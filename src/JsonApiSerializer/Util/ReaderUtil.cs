@@ -1,5 +1,6 @@
 ﻿using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi.WellKnown;
+using JsonApiSerializer.SerializationState;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
@@ -20,8 +21,8 @@ namespace JsonApiSerializer.Util
         public static ResourceObjectReference ReadAheadToIdentifyObject(ForkableJsonReader reader)
         {
             var lookAheadReader = reader.Fork();
-            var reference = new ResourceObjectReference();
-
+            string id = null;
+            string type = null;
             foreach (var propName in ReaderUtil.IterateProperties(lookAheadReader))
             {
                 if (propName == PropertyNames.Id)
@@ -30,7 +31,7 @@ namespace JsonApiSerializer.Util
                         throw new JsonApiFormatException(lookAheadReader.FullPath,
                             $"Expected to find string at {lookAheadReader.FullPath}",
                             "The value of 'id' MUST be a string");
-                    reference.Id = (string)lookAheadReader.Value;
+                    id = (string)lookAheadReader.Value;
                 }
                     
                 else if (propName == PropertyNames.Type)
@@ -39,15 +40,15 @@ namespace JsonApiSerializer.Util
                         throw new JsonApiFormatException(lookAheadReader.FullPath,
                             $"Expected to find string at {lookAheadReader.FullPath}",
                             "The value of 'type' MUST be a string");
-                    reference.Type = (string)lookAheadReader.Value;
+                    type = (string)lookAheadReader.Value;
                 }
                     
-
-                if (reference.Id != null && reference.Type != null)
+                //we have the data we need no point continuing to read the reader
+                if (id != null && type != null)
                     break;
             }
 
-            return reference;
+            return new ResourceObjectReference(id, type);
         }
 
         /// <summary>

@@ -1,6 +1,6 @@
 ﻿using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonApi.WellKnown;
-using JsonApiSerializer.ReferenceResolvers;
+using JsonApiSerializer.SerializationState;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -31,11 +31,13 @@ namespace JsonApiSerializer.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+            var serializationData = SerializationData.GetSerializationData(reader);
+
             reader = new ForkableJsonReader(reader);
 
             var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
             var rootObject = contract.DefaultCreator();
-            serializer.ReferenceResolver.AddReference(null, IncludedReferenceResolver.RootReference, rootObject);
+            serializationData.HasProcessedDocumentRoot = true;
 
             var includedConverter = new IncludedConverter();
 
@@ -81,7 +83,9 @@ namespace JsonApiSerializer.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            serializer.ReferenceResolver.AddReference(null, IncludedReferenceResolver.RootReference, value);
+            var serializationData = SerializationData.GetSerializationData(writer);
+
+            serializationData.HasProcessedDocumentRoot = true;
 
             var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(value.GetType());
             writer.WriteStartObject();
@@ -122,27 +126,24 @@ namespace JsonApiSerializer.JsonConverters
             {
                 //output the included. If we have a specified included field we will out everything in there
                 //and we will also output all the references defined in our reference resolver
-                var renderedReferences = (serializer.ReferenceResolver as IncludedReferenceResolver)?.RenderedReferences ?? new HashSet<string>();
-                var includedReferences = serializer.ReferenceResolver as IDictionary<string, object> ?? Enumerable.Empty<KeyValuePair<string, object>>();
-                includedReferences = includedReferences
-                    .Where(x => x.Key != IncludedReferenceResolver.RootReference)
-                    .Where(x => !renderedReferences.Contains(x.Key)); //dont output values we have already output
+                var referencesToInclude = serializationData.Included
+                    .Where(x => !serializationData.RenderedIncluded.Contains(x.Key)); //dont output values we have already output
+
+                //if any other included have been explicitly mentioned we will output them as well
                 var includedProperty = contract.Properties.GetClosestMatchProperty(PropertyNames.Included);
                 var includedValues = includedProperty?.ValueProvider?.GetValue(value) as IEnumerable<object> ?? Enumerable.Empty<object>();
 
-                //if we have some references we will output them
-                if (includedReferences.Any() || includedValues.Any())
+                
+                if (referencesToInclude.Any() || includedValues.Any())
                 {
                     writer.WritePropertyName(PropertyNames.Included);
                     writer.WriteStartArray();
 
                     foreach (var includedValue in includedValues)
-                    {
                         serializer.Serialize(writer, includedValue);
-                    }
 
                     //I know we can alter the OrderedDictionary while enumerating it, otherwise this would error
-                    foreach (var includedReference in includedReferences)
+                    foreach (var includedReference in referencesToInclude)
                         serializer.Serialize(writer, includedReference.Value);
 
                     writer.WriteEndArray();
@@ -154,8 +155,10 @@ namespace JsonApiSerializer.JsonConverters
 
         internal static bool TryResolveAsRootError(JsonReader reader, Type objectType, JsonSerializer serializer, out IEnumerable<IError> obj)
         {
+            var serializationData = SerializationData.GetSerializationData(reader);
+
             //if we already have a root object then we dont need to resolve the root object
-            if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
+            if (serializationData.HasProcessedDocumentRoot)
             {
                 obj = null;
                 return false;
@@ -180,8 +183,10 @@ namespace JsonApiSerializer.JsonConverters
 
         internal static bool TryResolveAsRootError(JsonWriter writer, object value, JsonSerializer serializer)
         {
+            var serializationData = SerializationData.GetSerializationData(writer);
+
             //if we already have a root object then we dont need to resolve the root object
-            if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
+            if (serializationData.HasProcessedDocumentRoot)
             {
                 return false;
             }
@@ -208,8 +213,10 @@ namespace JsonApiSerializer.JsonConverters
 
         internal static bool TryResolveAsRootData(JsonReader reader, Type objectType, JsonSerializer serializer, out object obj)
         {
+            var serializationData = SerializationData.GetSerializationData(reader);
+            
             //if we already have a root object then we dont need to resolve the root object
-            if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
+            if (serializationData.HasProcessedDocumentRoot)
             {
                 obj = null;
                 return false;
@@ -228,8 +235,10 @@ namespace JsonApiSerializer.JsonConverters
 
         internal static bool TryResolveAsRootData(JsonWriter writer, object value, JsonSerializer serializer)
         {
+            var serializationData = SerializationData.GetSerializationData(writer);
+
             //if we already have a root object then we dont need to resolve the root object
-            if (serializer.ReferenceResolver.ResolveReference(null, IncludedReferenceResolver.RootReference) != null)
+            if (serializationData.HasProcessedDocumentRoot)
             {
                 return false;
             }

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using JsonApiSerializer.JsonApi.WellKnown;
-using JsonApiSerializer.ReferenceResolvers;
+using JsonApiSerializer.SerializationState;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -47,27 +47,28 @@ namespace JsonApiSerializer.JsonConverters
                     return null;
 
                 JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
-
+                var serializationData = SerializationData.GetSerializationData(dataReader);
+                
                 //if we arent given an existing value check the references to see if we have one in there
                 //if we dont have one there then create a new object to populate
                 if (existingValue == null)
                 {
                     var reference = ReaderUtil.ReadAheadToIdentifyObject(dataReader);
-                    existingValue = serializer.ReferenceResolver.ResolveReference(null, reference.ToString());
-                    if (existingValue == null)
+
+                    if (!serializationData.Included.TryGetValue(reference, out existingValue))
                     {
                         existingValue = contract.DefaultCreator();
-                        serializer.ReferenceResolver.AddReference(null, reference.ToString(), existingValue);
+                        serializationData.Included.Add(reference, existingValue);
                     }
                     if (existingValue is JObject)
                     {
                         //sometimes the value in the reference resolver is a JObject. This occurs when we
                         //did not know what type it should be when we first read it (i.e. included was processed
                         //before the item). In these cases we will create a new object and read data from the JObject
-                        dataReader = new ForkableJsonReader(((JObject)existingValue).CreateReader());
+                        dataReader = new ForkableJsonReader(((JObject)existingValue).CreateReader(), dataReader.SerializationDataToken);
                         dataReader.Read(); //JObject readers begin at Not Started
                         existingValue = contract.DefaultCreator();
-                        serializer.ReferenceResolver.AddReference(null, reference.ToString(), existingValue);
+                        serializationData.Included[reference] = existingValue;
                     }
                 }
 
@@ -187,7 +188,7 @@ namespace JsonApiSerializer.JsonConverters
                     default:
                         //we do not know if it is an Attribute or a Relationship
                         //so we will send out a probe to determine which one it is
-                        var probe = new AttributeOrRelationshipProbe();
+                        var probe = new AttributeOrRelationshipProbe(writer);
                         probe.WritePropertyName(prop.PropertyName);
                         WriterUtil.WritePropertyValue(serializer, prop, propValue, probe);
 
@@ -199,9 +200,10 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             //add reference to this type, so others can reference it
-            var referenceValue = IncludedReferenceResolver.GetReferenceValue(id?.ToString(), type?.ToString());
-            serializer.ReferenceResolver.AddReference(null, referenceValue, value);
-            (serializer.ReferenceResolver as IncludedReferenceResolver)?.RenderedReferences?.Add(referenceValue);
+            var serializationData = SerializationData.GetSerializationData(writer);
+            var reference = new ResourceObjectReference(id?.ToString(), type?.ToString());
+            serializationData.Included[reference] = value;
+            serializationData.RenderedIncluded.Add(reference);
 
             //output our attibutes in an attribute tag
             if (attributes.Count > 0)
@@ -209,7 +211,7 @@ namespace JsonApiSerializer.JsonConverters
                 writer.WritePropertyName(PropertyNames.Attributes);
                 writer.WriteStartObject();
                 foreach (var attribute in attributes)
-                    attribute.ApplyCaptured(writer);
+                    attribute.ApplyCaptured();
                 writer.WriteEndObject();
             }
 
@@ -219,7 +221,7 @@ namespace JsonApiSerializer.JsonConverters
                 writer.WritePropertyName(PropertyNames.Relationships);
                 writer.WriteStartObject();
                 foreach (var relationship in relationships)
-                    relationship.ApplyCaptured(writer);
+                    relationship.ApplyCaptured();
                 writer.WriteEndObject();
             }
 
@@ -293,8 +295,9 @@ namespace JsonApiSerializer.JsonConverters
 
             if (willWriteObjectToIncluded)
             {
-                var reference = IncludedReferenceResolver.GetReferenceValue(idVal.ToString(), typeVal.ToString());
-                serializer.ReferenceResolver.AddReference(null, reference, value);
+                var serializationData = SerializationData.GetSerializationData(writer);
+                var reference = new ResourceObjectReference(idVal.ToString(), typeVal.ToString());
+                serializationData.Included[reference] = value;
             }
         }
 

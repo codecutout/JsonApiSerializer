@@ -1,5 +1,4 @@
 ﻿using JsonApiSerializer.JsonConverters;
-using JsonApiSerializer.ReferenceResolvers;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -24,7 +23,6 @@ namespace JsonApiSerializer
         {
             this.NullValueHandling = NullValueHandling.Ignore;
             this.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
-            this.ReferenceResolverProvider = () => new IncludedReferenceResolver();
             this.ContractResolver = new JsonApiContractResolver(resourceObjectConverter);
             this.DateParseHandling = DateParseHandling.None;
         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,7 @@ namespace JsonApiSerializer.Util
         public Type PropertyType { get; set; } = Type.Attribute;
 
 
-        public AttributeOrRelationshipProbe() :base(){
+        public AttributeOrRelationshipProbe(JsonWriter writer) :base(writer){
         }
     }
 }

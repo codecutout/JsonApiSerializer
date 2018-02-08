@@ -5,6 +5,7 @@ using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -408,5 +409,71 @@ namespace JsonApiSerializer.Test.SerializationTests
 }";
             Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
         }
+
+        [Fact]
+        public void When_shared_serializer_should_add_include()
+        {
+            var root = new DocumentRoot<Article>
+            {
+                Data = new Article
+                {
+                    Id = "1234",
+                    Title = "My Article",
+                    Author = new Person
+                    {
+                        Id = "333",
+                        FirstName = "John",
+                        LastName = "Smith",
+                        Twitter = "jsmi"
+                    }
+                }
+            };
+
+            //Single serializer, just like MVC JsonOutputFormatters use
+            var serializer = JsonSerializer.Create(settings);
+
+            var stringWriter1 = new StringWriter();
+            serializer.Serialize(stringWriter1, root);
+
+            var stringWriter2 = new StringWriter();
+            serializer.Serialize(stringWriter2, root);
+
+
+
+
+            var expectedjson = @"{
+                ""data"": {
+                    ""id"": ""1234"",
+                    ""type"": ""articles"",
+                    ""attributes"": {
+                        ""title"": ""My Article""
+                    },
+                    ""relationships"": {
+                        ""author"": {
+                            ""data"": { 
+                                ""id"":""333"", 
+                                ""type"":""people""
+                            }
+                        }
+                    }
+                },
+                ""included"" : [
+                    {
+                        ""id"": ""333"",
+                        ""type"": ""people"",
+                        ""attributes"":{
+                            ""first-name"": ""John"",
+                            ""last-name"": ""Smith"",
+                            ""twitter"": ""jsmi""
+                        }
+
+                    }
+                ]
+            }";
+            Assert.Equal(stringWriter1.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
+            Assert.Equal(stringWriter2.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
+        }
     }
+
+    
 }

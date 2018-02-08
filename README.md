@@ -275,3 +275,39 @@ This can be overrided during initialization by providing your own `JsonConverter
 var settings = new JsonApiSerializerSettings(new MyOwnJsonSerializer())
 Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, settings);
 ```
+
+### Integrating with Microsoft.AspNetCore.Mvc
+
+You can configure json:api to be the default serialization for your MVC site by reconfiguring the `JsonInputFormatter` and `JsonOutputFormatter` to use the `JsonApiSerializerSettings`
+
+```csharp
+public class Startup
+{
+
+	// ...
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        // ...
+
+        var sp = services.BuildServiceProvider();
+        var logger = sp.GetService<ILoggerFactory>();
+        var objectPoolProvider = sp.GetService<ObjectPoolProvider>();
+
+        services.AddMvc(opt => {
+            var serializerSettings = new JsonApiSerializerSettings();
+
+            var jsonApiFormatter = new JsonOutputFormatter(serializerSettings, ArrayPool<Char>.Shared);
+            opt.OutputFormatters.RemoveType<JsonOutputFormatter>();
+            opt.OutputFormatters.Insert(0, jsonApiFormatter);
+
+            var jsonApiInputFormatter = new JsonInputFormatter(logger.CreateLogger<JsonInputFormatter>(), serializerSettings, ArrayPool<Char>.Shared, objectPoolProvider);
+            opt.InputFormatters.RemoveType<JsonInputFormatter>();
+            opt.InputFormatters.Insert(0, jsonApiInputFormatter);
+
+        });
+    }
+}
+```
+
+

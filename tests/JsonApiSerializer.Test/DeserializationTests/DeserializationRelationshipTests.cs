@@ -4,6 +4,7 @@ using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -82,8 +83,43 @@ namespace JsonApiSerializer.Test.DeserializationTests
             Assert.Contains(articlesRoot.Included, x => x["id"].ToString() == "5" && x["type"].ToString() == "comments");
             Assert.Contains(articlesRoot.Included, x => x["id"].ToString() == "12" && x["type"].ToString() == "comments");
             Assert.Contains(articlesRoot.Included, x => x["id"].ToString() == "9" && x["type"].ToString() == "people");
+        }
+
+        [Fact]
+        public void When_single_serializer_should_reference_relationships()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.sample.json");
+
+            var serializer = JsonSerializer.Create(new JsonApiSerializerSettings());
+
+            var articles1 = serializer.Deserialize<Article[]>(new JsonTextReader(new StringReader(json)));
+            var article1 = articles1[0];
+
+            var articles2 = serializer.Deserialize<Article[]>(new JsonTextReader(new StringReader(json)));
+            var article2 = articles2[0];
+
+            //Check article1 is deserialized correctly
+            Assert.Equal("9", article1.Author.Id);
+            Assert.Equal("Dan", article1.Author.FirstName);
+            Assert.Equal("Gebhardt", article1.Author.LastName);
+            Assert.Equal("dgeb", article1.Author.Twitter);
+
+            var comments1 = article1.Comments;
+            Assert.Equal(2, comments1.Count);
+            Assert.Equal("First!", comments1[0].Body);
+            Assert.Equal("I like XML better", comments1[1].Body);
 
 
+            //Check article2 is deserialized correctly
+            Assert.Equal("9", article2.Author.Id);
+            Assert.Equal("Dan", article2.Author.FirstName);
+            Assert.Equal("Gebhardt", article2.Author.LastName);
+            Assert.Equal("dgeb", article2.Author.Twitter);
+
+            var comments2 = article2.Comments;
+            Assert.Equal(2, comments2.Count);
+            Assert.Equal("First!", comments2[0].Body);
+            Assert.Equal("I like XML better", comments2[1].Body);
         }
 
 

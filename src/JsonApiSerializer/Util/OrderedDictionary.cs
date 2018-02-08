@@ -202,13 +202,6 @@ namespace JsonApiSerializer.Util
             }
             #endregion Explicit ICollection Generic
 
-            #region Explicit IEnumerable Generic
-            IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-            #endregion Explicit IEnumerable Generic
-
             public sealed class KeyCollection : ICollection<TKey>
             {
                 OrderedDictionary<TKey, TValue> parent;

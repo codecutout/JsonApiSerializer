@@ -7,8 +7,10 @@ namespace JsonApiSerializer.Util
 {
     internal class ForkableJsonReader : JsonReader
     {
-        protected readonly JsonReader InnerReader;
+        public readonly object SerializationDataToken;
 
+        protected readonly JsonReader InnerReader;
+        
         protected readonly string ParentPath;
 
         private JsonReaderState ReaderState;
@@ -21,17 +23,24 @@ namespace JsonApiSerializer.Util
         }
 
         public ForkableJsonReader(JsonReader reader) 
-            : this(reader, new JsonReaderState(reader.TokenType, reader.Value))
+            : this(reader, new JsonReaderState(reader.TokenType, reader.Value), reader)
         {
 
         }
 
-        private ForkableJsonReader(JsonReader reader, JsonReaderState state)
+        public ForkableJsonReader(JsonReader reader, object serializationDataToken)
+          : this(reader, new JsonReaderState(reader.TokenType, reader.Value), serializationDataToken)
+        {
+
+        }
+
+        private ForkableJsonReader(JsonReader reader, JsonReaderState state, object serializationDataToken)
         {
             this.InnerReader = reader;
             this.ParentPath = reader.Path;
             this.SetToken(state.Token, state.Value);
             this.ReaderState = state;
+            this.SerializationDataToken = serializationDataToken;
         }
 
 
@@ -56,7 +65,7 @@ namespace JsonApiSerializer.Util
 
         public ForkableJsonReader Fork()
         {
-            return new ForkableJsonReader(this.InnerReader, this.ReaderState);
+            return new ForkableJsonReader(this.InnerReader, this.ReaderState, this.SerializationDataToken);
         }
 
      
