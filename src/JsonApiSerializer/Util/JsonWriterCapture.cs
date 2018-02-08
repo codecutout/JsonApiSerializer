@@ -10,11 +10,20 @@ namespace JsonApiSerializer.Util
 {
     internal class JsonWriterCapture : JsonWriter
     {
+        public readonly object SerializationDataToken;
+
         protected readonly List<Action<JsonWriter>> actions = new List<Action<JsonWriter>>();
 
-        public JsonWriterCapture() : base()
-        {
+        public readonly JsonWriter Writer;
 
+        public JsonWriterCapture(JsonWriter writer) : this(writer, writer)
+        {
+        }
+
+        public JsonWriterCapture(JsonWriter writer, object serializationDataToken) : base()
+        {
+            this.Writer = writer;
+            this.SerializationDataToken = serializationDataToken;
         }
 
         public override void Flush()
@@ -22,10 +31,10 @@ namespace JsonApiSerializer.Util
             
         }
 
-        public void ApplyCaptured(JsonWriter writer)
+        public void ApplyCaptured()
         {
             foreach (var action in actions)
-                action(writer);
+                action(Writer);
         }
 
         #region ("Public JsonWriter Methods")
