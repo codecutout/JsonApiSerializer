@@ -70,6 +70,15 @@ namespace JsonApiSerializer.JsonConverters
                 }
                 writer.WriteEndArray();
             });
+
+            var probe = writer as AttributeOrRelationshipProbe;
+            if (probe != null)
+            {
+                //This converter will only run if the element type is a resource object
+                //so this whole array should be in a relationship node. 
+                //We do it after processing to prevent any items within the list from overriding
+                probe.PropertyType = AttributeOrRelationshipProbe.Type.Relationship;
+            }
         }
     }
 }
