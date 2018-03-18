@@ -70,7 +70,40 @@ namespace JsonApiSerializer.Test.SerializationTests
                     }
                 ]
             }";
-            Assert.Equal(json, expectedjson, JsonStringEqualityComparer.Instance);
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
+        public void When_relationship_empty_array_should_output_empty_relationship()
+        {
+            var root = new DocumentRoot<Article>
+            {
+                Data = new Article
+                {
+                    Id = "1234",
+                    Title = "My Article",
+                    Comments = new List<Comment>()
+                    
+                }
+            };
+
+
+            var json = JsonConvert.SerializeObject(root, settings);
+            var expectedjson = @"{
+                ""data"": {
+                    ""id"": ""1234"",
+                    ""type"": ""articles"",
+                    ""attributes"": {
+                        ""title"": ""My Article""
+                    },
+                    ""relationships"": {
+                        ""comments"": {
+                            ""data"": []
+                            }
+                        }
+                    }
+                }";
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
         }
 
         [Fact]
