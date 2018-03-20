@@ -79,8 +79,10 @@ namespace JsonApiSerializer.Test.SerializationTests
   ""data"": {
     ""type"": ""articles"",
     ""id"": ""1234"",
-    ""attributes"": {
-      ""comments"": null
+    ""relationships"": {
+      ""comments"": {
+        ""data"": []
+      }
     }
   }
 }".Trim(), json);
@@ -115,8 +117,12 @@ namespace JsonApiSerializer.Test.SerializationTests
     ""id"": ""1234"",
     ""links"": null,
     ""attributes"": {
-      ""title"": null,
-      ""comments"": null
+      ""title"": null
+    },
+    ""relationships"": {
+      ""comments"": {
+        ""data"": []
+      }
     }
   }
 }".Trim(), json);

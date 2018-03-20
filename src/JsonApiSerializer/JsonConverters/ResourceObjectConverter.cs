@@ -142,6 +142,12 @@ namespace JsonApiSerializer.JsonConverters
 
         protected void WriteFullObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
+            if(value == null)
+            {
+                writer.WriteNull();
+                return;
+            }
+
             var valueType = value.GetType();
             var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(valueType);
             writer.WriteStartObject();
@@ -231,6 +237,12 @@ namespace JsonApiSerializer.JsonConverters
 
         protected void WriteReferenceObjectJson(JsonWriter writer, object value, JsonSerializer serializer, JsonObjectContract contract = null)
         {
+            if (value == null)
+            {
+                writer.WriteNull();
+                return;
+            }
+
             contract = contract ?? (JsonObjectContract)serializer.ContractResolver.ResolveContract(value.GetType());
 
             writer.WriteStartObject();
