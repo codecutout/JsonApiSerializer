@@ -9,12 +9,12 @@ namespace JsonApiSerializer.ContractResolvers
     {
         public readonly JsonConverter ResourceObjectConverter;
 
-        private readonly JsonConverter _resourceObjectListConverter;
+        internal readonly JsonConverter ResourceObjectListConverter;
 
         public JsonApiContractResolver(JsonConverter resourceObjectConverter)
         {
             ResourceObjectConverter = resourceObjectConverter;
-            _resourceObjectListConverter = new ResourceObjectListConverter(ResourceObjectConverter);
+            ResourceObjectListConverter = new ResourceObjectListConverter(ResourceObjectConverter);
 
             this.NamingStrategy = new CamelCaseNamingStrategy();
         }
@@ -35,8 +35,8 @@ namespace JsonApiSerializer.ContractResolvers
             if (ResourceObjectConverter.CanConvert(objectType))
                 return ResourceObjectConverter;
 
-            if (_resourceObjectListConverter.CanConvert(objectType))
-                return _resourceObjectListConverter;
+            if (ResourceObjectListConverter.CanConvert(objectType))
+                return ResourceObjectListConverter;
 
             if (LinkConverter.CanConvertStatic(objectType))
                 return new LinkConverter();
