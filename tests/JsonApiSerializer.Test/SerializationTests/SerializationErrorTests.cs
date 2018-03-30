@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using JsonApiSerializer.JsonApi;
-using JsonApiSerializer.Test.Models.Articles;
 using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
 using Xunit;

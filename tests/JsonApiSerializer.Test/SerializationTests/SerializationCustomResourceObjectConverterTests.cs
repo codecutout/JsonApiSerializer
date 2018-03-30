@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonConverters;
 using JsonApiSerializer.Test.Models.Articles;

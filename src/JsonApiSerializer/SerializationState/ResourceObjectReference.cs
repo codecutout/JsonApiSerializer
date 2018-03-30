@@ -1,5 +1,4 @@
 ﻿using JsonApiSerializer.JsonApi.WellKnown;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 

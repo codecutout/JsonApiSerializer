@@ -1,15 +1,8 @@
-﻿using JsonApiSerializer.JsonApi.WellKnown;
-using JsonApiSerializer.Util;
+﻿using JsonApiSerializer.Util;
 using JsonApiSerializer.Util.JsonApiConverter.Util;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JsonApiSerializer.SerializationState
 {
