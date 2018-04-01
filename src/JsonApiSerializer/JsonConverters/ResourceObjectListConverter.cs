@@ -1,15 +1,10 @@
-﻿using JsonApiSerializer.JsonApi;
-using JsonApiSerializer.JsonApi.WellKnown;
+﻿using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace JsonApiSerializer.JsonConverters
 {
