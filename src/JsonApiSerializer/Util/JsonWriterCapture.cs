@@ -24,10 +24,10 @@ namespace JsonApiSerializer.Util
 
         public override void Flush()
         {
-            
+
         }
 
-        public void ApplyCaptured()
+        public void ApplyCaptured(JsonWriter writer)
         {
             foreach (var action in actions)
                 action(Writer);
@@ -245,6 +245,6 @@ namespace JsonApiSerializer.Util
             actions.Add(x => x.WriteWhitespace(ws));
         }
 
-#endregion
+        #endregion
     }
 }
