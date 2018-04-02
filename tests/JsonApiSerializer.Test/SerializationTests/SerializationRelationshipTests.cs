@@ -11,7 +11,7 @@ namespace JsonApiSerializer.Test.SerializationTests
 {
     public class SerializationRelationshipTests
     {
-        public JsonApiSerializerSettings settings = new JsonApiSerializerSettings()
+        public JsonApiSerializerSettings settings = new JsonApiSerializerSettings
         {
             Formatting = Formatting.Indented //pretty print makes it easier to debug
         };
@@ -34,7 +34,6 @@ namespace JsonApiSerializer.Test.SerializationTests
                     }
                 }
             };
-
 
             var json = JsonConvert.SerializeObject(root, settings);
             var expectedjson = @"{
@@ -83,7 +82,6 @@ namespace JsonApiSerializer.Test.SerializationTests
                 }
             };
 
-
             var json = JsonConvert.SerializeObject(root, settings);
             var expectedjson = @"{
                 ""data"": {
@@ -116,8 +114,7 @@ namespace JsonApiSerializer.Test.SerializationTests
                 }
             };
 
-
-            var newSettings = new JsonApiSerializerSettings()
+            var newSettings = new JsonApiSerializerSettings
             {
                 Formatting = Formatting.Indented, //pretty print makes it easier to debug
                 NullValueHandling = NullValueHandling.Include
@@ -144,7 +141,6 @@ namespace JsonApiSerializer.Test.SerializationTests
             Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
         }
 
-
         [Fact]
         public void When_object_root_with_relationship_should_add_included()
         {
@@ -160,7 +156,6 @@ namespace JsonApiSerializer.Test.SerializationTests
                     Twitter = "jsmi"
                 }
             };
-
 
             var json = JsonConvert.SerializeObject(root, settings);
             var expectedjson = @"{
@@ -226,7 +221,6 @@ namespace JsonApiSerializer.Test.SerializationTests
                     }
                 }
             };
-
 
             var json = JsonConvert.SerializeObject(root, settings);
             var expectedjson = @"{
@@ -322,10 +316,9 @@ namespace JsonApiSerializer.Test.SerializationTests
                     {
                         { "self" , new Link {  Href = "http://example.com/articles/1/relationships/author" } },
                         { "related", new Link {  Href = "http://example.com/articles/1/author" } }
-                    },
+                    }
                 }
             };
-
 
             var json = JsonConvert.SerializeObject(root, settings);
             var expectedjson = @"{
@@ -403,9 +396,9 @@ namespace JsonApiSerializer.Test.SerializationTests
         [Fact]
         public void When_object_reference_relationships_are_in_data_should_not_be_in_includes()
         {
-            var london = new LocationWithId() { Id = "London", Description = "Capital" };
-            var kingsCross = new LocationWithId() { Id = "Kings-Cross", Parents = new[] { london } };
-            var farringdon = new LocationWithId() { Id = "Farringdon", Parents = new[] { london } };
+            var london = new LocationWithId { Id = "London", Description = "Capital" };
+            var kingsCross = new LocationWithId { Id = "Kings-Cross", Parents = new[] { london } };
+            var farringdon = new LocationWithId { Id = "Farringdon", Parents = new[] { london } };
 
             var root = new[]
             {
@@ -462,14 +455,16 @@ namespace JsonApiSerializer.Test.SerializationTests
         {
             var root = new[]
             {
-                new LocationWithId() { Id = "London", Description ="Capital" },
-                new LocationWithId() {
+                new LocationWithId { Id = "London", Description ="Capital" },
+                new LocationWithId
+                {
                     Id = "Kings-Cross",
-                    Parents = new[] { new LocationWithId() { Id = "London", Description= "Capital" } }
+                    Parents = new[] { new LocationWithId { Id = "London", Description= "Capital" } }
                 },
-                new LocationWithId() {
+                new LocationWithId
+                {
                     Id = "Farringdon",
-                    Parents = new[] { new LocationWithId() { Id = "London", Description = "Capital" } }
+                    Parents = new[] { new LocationWithId { Id = "London", Description = "Capital" } }
                 },
 
             };
@@ -545,9 +540,6 @@ namespace JsonApiSerializer.Test.SerializationTests
             var stringWriter2 = new StringWriter();
             serializer.Serialize(stringWriter2, root);
 
-
-
-
             var expectedjson = @"{
                 ""data"": {
                     ""id"": ""1234"",
@@ -581,6 +573,4 @@ namespace JsonApiSerializer.Test.SerializationTests
             Assert.Equal(stringWriter2.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
         }
     }
-
-
 }
