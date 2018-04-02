@@ -58,7 +58,7 @@ namespace JsonApiSerializer.JsonConverters
 
                         //if our object has an included property we will do our best to populate it
                         var property = contract.Properties.GetClosestMatchProperty(propName);
-                        if(ReaderUtil.CanPopulateProperty(property))
+                        if (ReaderUtil.CanPopulateProperty(property))
                         {
                             ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), ((ForkableJsonReader)reader).Fork());
                         }
@@ -68,7 +68,7 @@ namespace JsonApiSerializer.JsonConverters
                         {
                             includedConverter.ReadJson(reader, typeof(object), null, serializer);
                         }
-                       
+
                         break;
                     default:
                         ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), reader);
@@ -290,7 +290,5 @@ namespace JsonApiSerializer.JsonConverters
             [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public IEnumerable<TError> Errors { get; set; }
         }
-
     }
-
 }
