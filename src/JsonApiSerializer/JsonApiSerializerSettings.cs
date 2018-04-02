@@ -7,7 +7,7 @@ namespace JsonApiSerializer
     /// <summary>
     /// Provides a set of default settings to allow the deserialization of JsonApi formatted json.
     /// </summary>
-    /// <seealso cref="Newtonsoft.Json.JsonSerializerSettings" />
+    /// <seealso cref="JsonSerializerSettings" />
     public class JsonApiSerializerSettings : JsonSerializerSettings
     {
         /// <summary>
@@ -25,11 +25,9 @@ namespace JsonApiSerializer
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonApiSerializerSettings"/> class.
         /// </summary>
-        public JsonApiSerializerSettings() : this(new ResourceObjectConverter())
+        public JsonApiSerializerSettings()
+            : this(new ResourceObjectConverter())
         {
-            
         }
-
-
     }
 }

@@ -17,7 +17,7 @@ namespace JsonApiSerializer.JsonConverters
     /// <summary>
     /// Provides functionality to convert a JsonApi resoruce object into a .NET object
     /// </summary>
-    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    /// <seealso cref="JsonConverter" />
     public class ResourceObjectConverter : JsonConverter
     {
         private static readonly Regex DataReadPathRegex = new Regex($@"^$|{PropertyNames.Included}(\[\d+\])?$|{PropertyNames.Data}(\[\d+\])?$");
@@ -46,7 +46,7 @@ namespace JsonApiSerializer.JsonConverters
 
                 JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
                 var serializationData = SerializationData.GetSerializationData(dataReader);
-                
+
                 //if we arent given an existing value check the references to see if we have one in there
                 //if we dont have one there then create a new object to populate
                 if (existingValue == null)
@@ -75,15 +75,14 @@ namespace JsonApiSerializer.JsonConverters
             });
         }
 
-
         protected void PopulateProperties(JsonSerializer serializer, object obj, JsonReader reader, JsonObjectContract contract)
         {
             foreach (var propName in ReaderUtil.IterateProperties(reader))
             {
                 var successfullyPopulateProperty = ReaderUtil.TryPopulateProperty(
-                    serializer, 
-                    obj, 
-                    contract.Properties.GetClosestMatchProperty(propName), 
+                    serializer,
+                    obj,
+                    contract.Properties.GetClosestMatchProperty(propName),
                     reader);
 
                 //flatten out attributes onto the object
@@ -105,7 +104,7 @@ namespace JsonApiSerializer.JsonConverters
                     foreach (var innerPropName in ReaderUtil.IterateProperties(reader))
                     {
                         ReaderUtil.TryPopulateProperty(
-                            serializer, 
+                            serializer,
                             obj,
                             contract.Properties.GetClosestMatchProperty(innerPropName),
                             reader);
@@ -113,7 +112,6 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
         }
-
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
@@ -130,7 +128,6 @@ namespace JsonApiSerializer.JsonConverters
                 WriteFullObjectJson(writer, value, serializer);
             }
         }
-
 
         protected void WriteFullObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
         {

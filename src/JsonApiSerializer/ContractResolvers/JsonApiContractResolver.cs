@@ -20,7 +20,7 @@ namespace JsonApiSerializer.ContractResolvers
             ResourceObjectListConverter = new ResourceObjectListConverter(ResourceObjectConverter);
             ResourceRelationshipConverter = new ResourceRelationshipConverter();
 
-            this.NamingStrategy = new CamelCaseNamingStrategy();
+            NamingStrategy = new CamelCaseNamingStrategy();
         }
 
         public JsonApiContractResolver()
