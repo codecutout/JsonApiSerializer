@@ -371,20 +371,12 @@ namespace JsonApiSerializer.Test.SerializationTests
             {
                 Id = "1234",
                 Title = "My Article",
-                Author = new Relationship<Person>
+                Comments = new Relationship<List<Comment>>
                 {
-                    //Data = new Person
-                    //{
-                    //    Id = "333",
-                    //    FirstName = "John",
-                    //    LastName = "Smith",
-                    //    Twitter = "jsmi"
-                    //},
                     Links = new Links
                     {
-                        { "self" , new Link {  Href = "http://example.com/articles/1/relationships/author" } },
-                        { "related", new Link {  Href = "http://example.com/articles/1/author" } }
-                    },
+                        { "related", new Link {  Href = "http://example.com/articles/1/comments" } }
+                    }
                 }
             };
 
@@ -397,26 +389,13 @@ namespace JsonApiSerializer.Test.SerializationTests
                         ""title"": ""My Article""
                     },
                     ""relationships"": {
-                        ""author"": {
+                        ""comments"": {
                             ""links"": {
-                                ""self"": ""http://example.com/articles/1/relationships/author"",
-                                ""related"": ""http://example.com/articles/1/author""
+                                ""related"": ""http://example.com/articles/1/comments""
                             }
                         }
                     }
-                },
-                ""included"" : [
-                    {
-                        ""id"": ""333"",
-                        ""type"": ""people"",
-                        ""attributes"":{
-                            ""first-name"": ""John"",
-                            ""last-name"": ""Smith"",
-                            ""twitter"": ""jsmi""
-                        }
-
-                    }
-                ]
+                }
             }";
             Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
         }
