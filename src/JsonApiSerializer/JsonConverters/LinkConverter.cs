@@ -37,7 +37,7 @@ namespace JsonApiSerializer.JsonConverters
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(value.GetType());
-                       
+
             //gather all the properties for the link
             var outputProperties = new List<KeyValuePair<string, object>>();
             foreach (var prop in contract.Properties.Where(x => !x.Ignored))
@@ -46,7 +46,7 @@ namespace JsonApiSerializer.JsonConverters
                 if (propValue == null && (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
                     continue;
                 outputProperties.Add(new KeyValuePair<string, object>(prop.PropertyName, propValue));
-              
+
             }
 
             //A link MUST be represented as either: a string, a link object
@@ -68,7 +68,7 @@ namespace JsonApiSerializer.JsonConverters
                 writer.WriteEndObject();
             }
 
-           
+
         }
     }
 }
