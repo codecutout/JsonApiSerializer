@@ -79,7 +79,7 @@ namespace JsonApiSerializer.Test.SerializationTests
                     Id = "1234",
                     Title = "My Article",
                     Comments = new List<Comment>()
-                    
+
                 }
             };
 
@@ -110,7 +110,7 @@ namespace JsonApiSerializer.Test.SerializationTests
                 Data = new Article
                 {
                     Id = "1234",
-                    Title = null, 
+                    Title = null,
                     Author = null,
                     Comments = null
                 }
@@ -364,11 +364,67 @@ namespace JsonApiSerializer.Test.SerializationTests
             Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
         }
 
+        [Fact]
+        public void When_()
+        {
+            var root = new ArticleWithRelationship
+            {
+                Id = "1234",
+                Title = "My Article",
+                Author = new Relationship<Person>
+                {
+                    //Data = new Person
+                    //{
+                    //    Id = "333",
+                    //    FirstName = "John",
+                    //    LastName = "Smith",
+                    //    Twitter = "jsmi"
+                    //},
+                    Links = new Links
+                    {
+                        { "self" , new Link {  Href = "http://example.com/articles/1/relationships/author" } },
+                        { "related", new Link {  Href = "http://example.com/articles/1/author" } }
+                    },
+                }
+            };
+
+            var json = JsonConvert.SerializeObject(root, settings);
+            var expectedjson = @"{
+                ""data"": {
+                    ""id"": ""1234"",
+                    ""type"": ""articles"",
+                    ""attributes"": {
+                        ""title"": ""My Article""
+                    },
+                    ""relationships"": {
+                        ""author"": {
+                            ""links"": {
+                                ""self"": ""http://example.com/articles/1/relationships/author"",
+                                ""related"": ""http://example.com/articles/1/author""
+                            }
+                        }
+                    }
+                },
+                ""included"" : [
+                    {
+                        ""id"": ""333"",
+                        ""type"": ""people"",
+                        ""attributes"":{
+                            ""first-name"": ""John"",
+                            ""last-name"": ""Smith"",
+                            ""twitter"": ""jsmi""
+                        }
+
+                    }
+                ]
+            }";
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
 
         [Fact]
         public void When_object_reference_relationships_are_in_data_should_not_be_in_includes()
         {
-            var london = new LocationWithId() { Id = "London", Description = "Capital"  };
+            var london = new LocationWithId() { Id = "London", Description = "Capital" };
             var kingsCross = new LocationWithId() { Id = "Kings-Cross", Parents = new[] { london } };
             var farringdon = new LocationWithId() { Id = "Farringdon", Parents = new[] { london } };
 
@@ -436,7 +492,7 @@ namespace JsonApiSerializer.Test.SerializationTests
                     Id = "Farringdon",
                     Parents = new[] { new LocationWithId() { Id = "London", Description = "Capital" } }
                 },
-                
+
             };
 
             var json = JsonConvert.SerializeObject(root, settings);
@@ -547,5 +603,5 @@ namespace JsonApiSerializer.Test.SerializationTests
         }
     }
 
-    
+
 }
