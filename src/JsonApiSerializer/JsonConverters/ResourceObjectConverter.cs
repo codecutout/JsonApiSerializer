@@ -24,7 +24,7 @@ namespace JsonApiSerializer.JsonConverters
         public override bool CanConvert(Type objectType)
         {
             return TypeInfoShim.GetPropertyFromInhertianceChain(objectType.GetTypeInfo(), "Id") != null;
-            
+
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -38,8 +38,8 @@ namespace JsonApiSerializer.JsonConverters
             //read into the 'Data' element
             return ReaderUtil.ReadInto(
                 reader as ForkableJsonReader ?? new ForkableJsonReader(reader),
-                DataReadPathRegex, 
-                dataReader=>
+                DataReadPathRegex,
+                dataReader =>
             {
                 //if the value has been explicitly set to null then the value of the element is simply null
                 if (dataReader.TokenType == JsonToken.Null)
@@ -47,7 +47,7 @@ namespace JsonApiSerializer.JsonConverters
 
                 JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
                 var serializationData = SerializationData.GetSerializationData(dataReader);
-                
+
                 //if we arent given an existing value check the references to see if we have one in there
                 //if we dont have one there then create a new object to populate
                 if (existingValue == null)
@@ -82,9 +82,9 @@ namespace JsonApiSerializer.JsonConverters
             foreach (var propName in ReaderUtil.IterateProperties(reader))
             {
                 var successfullyPopulateProperty = ReaderUtil.TryPopulateProperty(
-                    serializer, 
-                    obj, 
-                    contract.Properties.GetClosestMatchProperty(propName), 
+                    serializer,
+                    obj,
+                    contract.Properties.GetClosestMatchProperty(propName),
                     reader);
 
                 //flatten out attributes onto the object
@@ -106,7 +106,7 @@ namespace JsonApiSerializer.JsonConverters
                     foreach (var innerPropName in ReaderUtil.IterateProperties(reader))
                     {
                         ReaderUtil.TryPopulateProperty(
-                            serializer, 
+                            serializer,
                             obj,
                             contract.Properties.GetClosestMatchProperty(innerPropName),
                             reader);
@@ -141,7 +141,7 @@ namespace JsonApiSerializer.JsonConverters
 
         protected void WriteFullObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if(value == null)
+            if (value == null)
             {
                 writer.WriteNull();
                 return;
@@ -164,9 +164,9 @@ namespace JsonApiSerializer.JsonConverters
                 serializer.Serialize(writer, GenerateDefaultTypeName(valueType));
             }
 
-            List<JsonWriterCapture> attributes = new List<JsonWriterCapture>();
+            List<Action<JsonWriter>> attributes = new List<Action<JsonWriter>>();
             List<JsonWriterCapture> relationships = new List<JsonWriterCapture>();
-            foreach (var prop in contract.Properties.Where(x=>!x.Ignored))
+            foreach (var prop in contract.Properties.Where(x => !x.Ignored))
             {
                 var propValue = prop.ValueProvider.GetValue(value);
                 if (propValue == null && (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
@@ -180,26 +180,54 @@ namespace JsonApiSerializer.JsonConverters
                         writer.WritePropertyName(prop.PropertyName);
                         serializer.Serialize(writer, id);
                         break;
+
                     case PropertyNames.Links:
                     case PropertyNames.Meta:
                         writer.WritePropertyName(prop.PropertyName);
                         serializer.Serialize(writer, propValue);
                         break;
+
                     case PropertyNames.Type:
                         writer.WritePropertyName("type");
                         type = typeProp?.ValueProvider?.GetValue(value) ?? GenerateDefaultTypeName(valueType);
                         serializer.Serialize(writer, type);
                         break;
-                    default:
-                        //we do not know if it is an Attribute or a Relationship
-                        //so we will send out a probe to determine which one it is
-                        var probe = new AttributeOrRelationshipProbe(writer);
-                        probe.WritePropertyName(prop.PropertyName);
-                        WriterUtil.WritePropertyValue(serializer, prop, propValue, probe);
 
-                        (probe.PropertyType == AttributeOrRelationshipProbe.Type.Attribute
-                            ? attributes
-                            : relationships).Add(probe);
+                    default:
+                        switch (propValue)
+                        {
+                            case string _:
+                                var k = prop;
+                                attributes.Add(x => x.WritePropertyName(k.PropertyName));
+                                attributes.Add(x => x.WriteValue(propValue));
+
+                                //writer.WritePropertyName(prop.PropertyName);
+                                //serializer.Serialize(writer, propValue);
+                                break;
+
+                            default:
+                                //we do not know if it is an Attribute or a Relationship
+                                //so we will send out a probe to determine which one it is
+                                var probe = new AttributeOrRelationshipProbe(writer);
+                                probe.WritePropertyName(prop.PropertyName);
+                                WriterUtil.WritePropertyValue(serializer, prop, propValue, probe);
+
+                                if (probe.PropertyType == AttributeOrRelationshipProbe.Type.Attribute)
+                                {
+                                    attributes.Add(probe.ApplyCaptured);
+                                }
+                                else
+                                {
+                                    relationships.Add(probe);
+                                }
+
+                                //(probe.PropertyType == AttributeOrRelationshipProbe.Type.Attribute
+                                //    ? attributes
+                                //    : relationships).Add(probe.ApplyCaptured);
+
+                                break;
+                        }
+
                         break;
                 }
             }
@@ -216,7 +244,7 @@ namespace JsonApiSerializer.JsonConverters
                 writer.WritePropertyName(PropertyNames.Attributes);
                 writer.WriteStartObject();
                 foreach (var attribute in attributes)
-                    attribute.ApplyCaptured();
+                    attribute(writer);
                 writer.WriteEndObject();
             }
 
@@ -226,7 +254,7 @@ namespace JsonApiSerializer.JsonConverters
                 writer.WritePropertyName(PropertyNames.Relationships);
                 writer.WriteStartObject();
                 foreach (var relationship in relationships)
-                    relationship.ApplyCaptured();
+                    relationship.ApplyCaptured(writer);
                 writer.WriteEndObject();
             }
 
