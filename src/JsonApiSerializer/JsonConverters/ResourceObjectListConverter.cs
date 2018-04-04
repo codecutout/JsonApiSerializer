@@ -46,8 +46,6 @@ namespace JsonApiSerializer.JsonConverters
             ReaderUtil.ReadUntilEnd(reader, preDataPath);
 
             return list;
-
-
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
