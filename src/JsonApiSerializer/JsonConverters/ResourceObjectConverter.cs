@@ -23,11 +23,6 @@ namespace JsonApiSerializer.JsonConverters
 
         public override bool CanConvert(Type objectType)
         {
-            if (objectType == typeof(object))
-            {
-                return true;
-            }
-
             return TypeInfoShim.GetPropertyFromInhertianceChain(objectType.GetTypeInfo(), "Id") != null;
         }
 

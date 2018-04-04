@@ -21,8 +21,12 @@ namespace JsonApiSerializer.JsonConverters
 
         public override bool CanConvert(Type objectType)
         {
-            Type elementType;
-            return ListUtil.IsList(objectType, out elementType) && ResourceObjectConverter.CanConvert(elementType);
+            if (!ListUtil.IsList(objectType, out var elementType))
+            {
+                return false;
+            }
+
+            return ResourceObjectConverter.CanConvert(elementType) || elementType == typeof(object);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
