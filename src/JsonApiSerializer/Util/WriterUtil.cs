@@ -23,7 +23,7 @@ namespace JsonApiSerializer.Util
             }
         }
 
-        internal static void WritePropertyValue(JsonSerializer serializer, JsonProperty property, object propValue, JsonWriter writer)
+        internal static void SerializeValueWithMemberConvertor(JsonSerializer serializer, JsonWriter writer, JsonProperty property, object propValue)
         {
             if (property.MemberConverter != null && property.MemberConverter.CanWrite)
             {
@@ -31,21 +31,7 @@ namespace JsonApiSerializer.Util
                 return;
             }
 
-            //Json.net does not normally pass null values through to the converters, this makes processing
-            //null values difficult. So we will force null values into our converters (and only our converters)
-            if (propValue == null && serializer.ContractResolver is JsonApiContractResolver resolver)
-            {
-                var contract = serializer.ContractResolver.ResolveContract(property.PropertyType);
-                if (contract.Converter == resolver.ResourceObjectConverter 
-                    || contract.Converter == resolver.ResourceObjectListConverter)
-                {
-                    contract.Converter.WriteJson(writer, propValue, serializer);
-                    return;
-                }
-            }
-
             serializer.Serialize(writer, propValue);
-
         }
-    }
+    }   
 }

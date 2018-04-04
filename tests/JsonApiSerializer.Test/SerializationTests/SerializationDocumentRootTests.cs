@@ -1,4 +1,5 @@
-﻿using JsonApiSerializer.JsonApi;
+﻿using JsonApiSerializer.Exceptions;
+using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.Test.Models.Articles;
 using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
@@ -209,5 +210,81 @@ namespace JsonApiSerializer.Test.SerializationTests
             }", json, JsonStringEqualityComparer.Instance);
         }
 
+        [Fact]
+        public void When_explicit_document_root_data_is_of_type_object_list_and_contains_resources_should_serialize()
+        {
+            var root = new DocumentRoot<object[]>
+            {
+                Data = new object[] {
+                    new
+                    {
+                        Id = "p1",
+                        Type = "people",
+                        FirstName = "John",
+                        LastName = "Smith"
+                    },
+                    new
+                    {
+                        Id = "c1",
+                        Type = "company",
+                        CompanyName = "John Smith Inc"
+                    }
+                }
+            };
+
+
+            var json = JsonConvert.SerializeObject(root, settings);
+
+            Assert.Equal(@"{
+                data : [
+                    {
+                        ""id"" : ""p1"",
+                        ""type"" : ""people"",
+                        ""attributes"" : {
+                            ""firstName"" : ""John"",
+                            ""lastName"" : ""Smith""
+                        }
+                    },
+                    {
+                        ""id"" : ""c1"",
+                        ""type"" : ""company"",
+                        ""attributes"" : {
+                            ""companyName"" : ""John Smith Inc""
+                        }
+                    }
+                ]
+            }", json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
+        public void When_explicit_document_root_data_is_of_type_object_list_and_contains_non_resources_should_error()
+        {
+            var root = new DocumentRoot<object[]>
+            {
+                Data = new object[] {
+                    new
+                    {
+                        Id = "p1",
+                        Type = "people",
+                        FirstName = "John",
+                        LastName = "Smith"
+                    },
+                    "not-a-resource-object"
+                }
+            };
+
+            Assert.Throws<JsonApiFormatException>(() => JsonConvert.SerializeObject(root, settings));
+        }
+
+        [Fact]
+        public void When_explicit_document_root_data_is_of_type_object_and_contains_non_resources_should_error()
+        {
+            var root = new DocumentRoot<object>
+            {
+                Data = "not-a-resource-object"
+            };
+
+            Assert.Throws<JsonApiFormatException>(() => JsonConvert.SerializeObject(root, settings));
+        }
     }
 }

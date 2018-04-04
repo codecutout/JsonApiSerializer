@@ -1,6 +1,8 @@
-﻿namespace JsonApiSerializer.JsonApi
+﻿using Newtonsoft.Json;
+
+namespace JsonApiSerializer.JsonApi
 {
-    public static class Relationship
+    public class Relationship
     {
         /// <summary>
         /// Creates a Relationship for a given type.
@@ -13,18 +15,21 @@
                 Data = data
             };
         }
+
+        [JsonProperty("links", NullValueHandling = NullValueHandling.Ignore)]
+        public Links Links { get; set; }
+
+        [JsonProperty("meta", NullValueHandling = NullValueHandling.Ignore)]
+        public Meta Meta { get; set; }
     }
 
     /// <summary>
     /// Represents a Relationship.
     /// </summary>
     /// <typeparam name="TData">The type of the data.</typeparam>
-    public class Relationship<TData>
+    public class Relationship<TData> : Relationship
     {
+        [JsonProperty("data", NullValueHandling = NullValueHandling.Include)]
         public TData Data { get; set; }
-
-        public Links Links { get; set; }
-
-        public Meta Meta { get; set; }
     }
 }

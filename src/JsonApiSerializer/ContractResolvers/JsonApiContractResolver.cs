@@ -1,4 +1,5 @@
 ﻿using System;
+using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonConverters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -9,12 +10,15 @@ namespace JsonApiSerializer.ContractResolvers
     {
         public readonly JsonConverter ResourceObjectConverter;
 
-        internal readonly JsonConverter ResourceObjectListConverter;
+        internal readonly ResourceObjectListConverter ResourceObjectListConverter;
+
+        internal readonly ResourceRelationshipConverter ResourceRelationshipConverter;
 
         public JsonApiContractResolver(JsonConverter resourceObjectConverter)
         {
             ResourceObjectConverter = resourceObjectConverter;
             ResourceObjectListConverter = new ResourceObjectListConverter(ResourceObjectConverter);
+            ResourceRelationshipConverter = new ResourceRelationshipConverter();
 
             this.NamingStrategy = new CamelCaseNamingStrategy();
         }
@@ -26,7 +30,7 @@ namespace JsonApiSerializer.ContractResolvers
 
         protected override JsonConverter ResolveContractConverter(Type objectType)
         {
-            if(ErrorConverter.CanConvertStatic(objectType))
+            if (ErrorConverter.CanConvertStatic(objectType))
                 return new ErrorConverter();
 
             if (ErrorListConverter.CanConvertStatic(objectType))
@@ -43,6 +47,9 @@ namespace JsonApiSerializer.ContractResolvers
 
             if (DocumentRootConverter.CanConvertStatic(objectType))
                 return new DocumentRootConverter();
+
+            if (ResourceRelationshipConverter.CanConvert(objectType))
+                return ResourceRelationshipConverter;
 
             return base.ResolveContractConverter(objectType);
         }
