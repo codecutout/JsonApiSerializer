@@ -21,10 +21,14 @@ namespace JsonApiSerializer.JsonConverters
 
         public override bool CanConvert(Type objectType)
         {
-            Type elementType;
-            return ListUtil.IsList(objectType, out elementType) && ResourceObjectConverter.CanConvert(elementType);
+            if (!ListUtil.IsList(objectType, out var elementType))
+            {
+                return false;
+            }
+
+            return ResourceObjectConverter.CanConvert(elementType) || elementType == typeof(object);
         }
-        
+
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             object list;
@@ -33,7 +37,7 @@ namespace JsonApiSerializer.JsonConverters
 
             //read into the 'Data' path
             var preDataPath = ReaderUtil.ReadUntilStart(reader, DataPathRegex);
-            
+
             //we should be dealing with list types, but we also want the element type
             Type elementType;
             if (!ListUtil.IsList(objectType, out elementType))
@@ -46,8 +50,6 @@ namespace JsonApiSerializer.JsonConverters
             ReaderUtil.ReadUntilEnd(reader, preDataPath);
 
             return list;
-            
-           
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

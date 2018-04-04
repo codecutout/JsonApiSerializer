@@ -24,7 +24,6 @@ namespace JsonApiSerializer.JsonConverters
         public override bool CanConvert(Type objectType)
         {
             return TypeInfoShim.GetPropertyFromInhertianceChain(objectType.GetTypeInfo(), "Id") != null;
-            
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -38,8 +37,8 @@ namespace JsonApiSerializer.JsonConverters
             //read into the 'Data' element
             return ReaderUtil.ReadInto(
                 reader as ForkableJsonReader ?? new ForkableJsonReader(reader),
-                DataReadPathRegex, 
-                dataReader=>
+                DataReadPathRegex,
+                dataReader =>
             {
                 //if the value has been explicitly set to null then the value of the element is simply null
                 if (dataReader.TokenType == JsonToken.Null)
@@ -47,7 +46,7 @@ namespace JsonApiSerializer.JsonConverters
 
                 JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
                 var serializationData = SerializationData.GetSerializationData(dataReader);
-                
+
                 //if we arent given an existing value check the references to see if we have one in there
                 //if we dont have one there then create a new object to populate
                 if (existingValue == null)
@@ -82,9 +81,9 @@ namespace JsonApiSerializer.JsonConverters
             foreach (var propName in ReaderUtil.IterateProperties(reader))
             {
                 var successfullyPopulateProperty = ReaderUtil.TryPopulateProperty(
-                    serializer, 
-                    obj, 
-                    contract.Properties.GetClosestMatchProperty(propName), 
+                    serializer,
+                    obj,
+                    contract.Properties.GetClosestMatchProperty(propName),
                     reader);
 
                 //flatten out attributes onto the object
@@ -106,7 +105,7 @@ namespace JsonApiSerializer.JsonConverters
                     foreach (var innerPropName in ReaderUtil.IterateProperties(reader))
                     {
                         ReaderUtil.TryPopulateProperty(
-                            serializer, 
+                            serializer,
                             obj,
                             contract.Properties.GetClosestMatchProperty(innerPropName),
                             reader);
@@ -141,7 +140,7 @@ namespace JsonApiSerializer.JsonConverters
 
         protected void WriteFullObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if(value == null)
+            if (value == null)
             {
                 writer.WriteNull();
                 return;
@@ -166,7 +165,7 @@ namespace JsonApiSerializer.JsonConverters
 
             List<JsonWriterCapture> attributes = new List<JsonWriterCapture>();
             List<JsonWriterCapture> relationships = new List<JsonWriterCapture>();
-            foreach (var prop in contract.Properties.Where(x=>!x.Ignored))
+            foreach (var prop in contract.Properties.Where(x => !x.Ignored))
             {
                 var propValue = prop.ValueProvider.GetValue(value);
                 if (propValue == null && (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
