@@ -1,4 +1,5 @@
-﻿using JsonApiSerializer.JsonApi;
+﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.SerializationState;
 using JsonApiSerializer.Util;
@@ -16,7 +17,7 @@ namespace JsonApiSerializer.JsonConverters
         public static bool CanConvertStatic(Type objectType)
         {
             return TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
-                .Select(x=>x.GetTypeInfo())
+                .Select(x => x.GetTypeInfo())
                 .Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
         }
 
@@ -63,9 +64,9 @@ namespace JsonApiSerializer.JsonConverters
                         }
 
                         //still need to read our values so they are updated
-                        foreach (var obj in ReaderUtil.IterateList(reader))
+                        foreach (var _ in ReaderUtil.IterateList(reader))
                         {
-                            var includedObject = includedConverter.ReadJson(reader, typeof(object), null, serializer);
+                            includedConverter.ReadJson(reader, typeof(object), null, serializer);
                         }
                        
                         break;
@@ -83,11 +84,12 @@ namespace JsonApiSerializer.JsonConverters
 
             serializationData.HasProcessedDocumentRoot = true;
 
-            var contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(value.GetType());
+            var contractResolver = (JsonApiContractResolver)serializer.ContractResolver;
+            var contract = (JsonObjectContract)contractResolver.ResolveContract(value.GetType());
             writer.WriteStartObject();
 
             var propertiesOutput = new HashSet<string>();
-            foreach(var prop in contract.Properties)
+            foreach (var prop in contract.Properties)
             {
                 //we will do includes last, so we we can ensure all the references have been added
                 if (prop.PropertyName == PropertyNames.Included)
@@ -97,18 +99,49 @@ namespace JsonApiSerializer.JsonConverters
                 var propValue = prop.ValueProvider.GetValue(value);
                 if (propValue == null && (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
                     continue;
+                var propType = propValue?.GetType() ?? prop.PropertyType;
+                switch (prop.PropertyName)
+                {
+                    case PropertyNames.Data when ListUtil.IsList(propType, out var elementType):
+                        writer.WritePropertyName(prop.PropertyName);
+                        propertiesOutput.Add(prop.PropertyName);
 
-                //A document MAY contain any of these top-level members: jsonapi, links, included
-                //We are also allowing everything else they happen to have on the root document
-                writer.WritePropertyName(prop.PropertyName);
-                serializer.Serialize(writer, propValue);
-                propertiesOutput.Add(prop.PropertyName);
+                        if (propValue == null)
+                        {
+                            //Resource linkage MUST be represented by an empty array ([]) for empty to-many relationships
+                            writer.WriteStartArray();
+                            writer.WriteEndArray();
+                            break;
+                        }
+                        contractResolver.ResourceObjectListConverter.WriteJson(writer, propValue, serializer);
+                        break;
+                    case PropertyNames.Data:
+                        writer.WritePropertyName(prop.PropertyName);
+                        propertiesOutput.Add(prop.PropertyName);
+
+                        if (propValue == null)
+                        {
+                            writer.WriteNull();
+                            break;
+                        }
+
+                        //because we are in a relationship we want to force this list to be treated as a resource object
+                        contractResolver.ResourceObjectConverter.WriteJson(writer, propValue, serializer);
+                        break;
+                    default:
+                        //A document MAY contain any of these top-level members: jsonapi, links, included
+                        //We are also allowing everything else they happen to have on the root document
+                        writer.WritePropertyName(prop.PropertyName);
+                        serializer.Serialize(writer, propValue);
+                        propertiesOutput.Add(prop.PropertyName);
+                        break;
+                }
             }
 
 
             //A document MUST contain one of the following (data, errors, meta)
             //so if we do not have one of them we will output a null data
-            if(!propertiesOutput.Contains(PropertyNames.Data)
+            if (!propertiesOutput.Contains(PropertyNames.Data)
                 && !propertiesOutput.Contains(PropertyNames.Errors) 
                 && !propertiesOutput.Contains(PropertyNames.Meta))
             {
@@ -129,7 +162,6 @@ namespace JsonApiSerializer.JsonConverters
                 var includedProperty = contract.Properties.GetClosestMatchProperty(PropertyNames.Included);
                 var includedValues = includedProperty?.ValueProvider?.GetValue(value) as IEnumerable<object> ?? Enumerable.Empty<object>();
 
-                
                 if (referencesToInclude.Any() || includedValues.Any())
                 {
                     writer.WritePropertyName(PropertyNames.Included);
@@ -197,8 +229,6 @@ namespace JsonApiSerializer.JsonConverters
             var objContract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(documentRootType);
             var rootObj = objContract.DefaultCreator();
 
-            
-
             //set the data property to be our current object
             var dataProp = objContract.Properties.GetClosestMatchProperty("errors");
             dataProp.ValueProvider.SetValue(rootObj, value);
@@ -210,7 +240,7 @@ namespace JsonApiSerializer.JsonConverters
         internal static bool TryResolveAsRootData(JsonReader reader, Type objectType, JsonSerializer serializer, out object obj)
         {
             var serializationData = SerializationData.GetSerializationData(reader);
-            
+
             //if we already have a root object then we dont need to resolve the root object
             if (serializationData.HasProcessedDocumentRoot)
             {

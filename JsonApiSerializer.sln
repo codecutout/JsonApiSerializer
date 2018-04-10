@@ -13,12 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{32D2F3FF
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution", "solution", "{52EDA15C-678C-4F6B-A58B-2FF9F26B5B84}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
 		README.md = README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{B7D2D1A6-3214-4749-9DAA-D2785B62C4E9}"
-	ProjectSection(SolutionItems) = preProject
-		build\package.bat = build\package.bat
 	EndProjectSection
 EndProject
 Global

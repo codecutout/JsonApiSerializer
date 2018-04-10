@@ -13,8 +13,6 @@ namespace JsonApiSerializer.SerializationState
         public static SerializationData GetSerializationData(JsonWriter writer)
         {
             object token = writer;
-            if (writer is JsonWriterCapture jsonWriterCapture)
-                token = jsonWriterCapture.SerializationDataToken;
             return _perSerializationData.GetOrCreateValue(token);
         }
 

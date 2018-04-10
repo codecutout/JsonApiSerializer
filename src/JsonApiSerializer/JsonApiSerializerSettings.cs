@@ -14,12 +14,12 @@ namespace JsonApiSerializer
         /// Initializes a new instance of the <see cref="JsonApiSerializerSettings"/> class.
         /// </summary>
         /// <param name="resourceObjectConverter">The converter to use when serializing/deserializing a JsonApi resource object</param>
-        public JsonApiSerializerSettings(JsonConverter resourceObjectConverter) : base()
+        public JsonApiSerializerSettings(JsonConverter resourceObjectConverter)
         {
-            this.NullValueHandling = NullValueHandling.Ignore;
-            this.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
-            this.ContractResolver = new JsonApiContractResolver(resourceObjectConverter);
-            this.DateParseHandling = DateParseHandling.None;
+            NullValueHandling = NullValueHandling.Ignore;
+            ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
+            ContractResolver = new JsonApiContractResolver(resourceObjectConverter);
+            DateParseHandling = DateParseHandling.None;
         }
 
         /// <summary>

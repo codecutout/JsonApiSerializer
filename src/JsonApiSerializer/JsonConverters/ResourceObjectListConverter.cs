@@ -1,4 +1,5 @@
-﻿using JsonApiSerializer.JsonApi.WellKnown;
+﻿using JsonApiSerializer.Exceptions;
+using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using System;
@@ -46,8 +47,6 @@ namespace JsonApiSerializer.JsonConverters
             ReaderUtil.ReadUntilEnd(reader, preDataPath);
 
             return list;
-            
-           
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -55,25 +54,18 @@ namespace JsonApiSerializer.JsonConverters
             if (DocumentRootConverter.TryResolveAsRootData(writer, value, serializer))
                 return;
 
-            WriterUtil.WriteIntoElement(writer, DataPathRegex, PropertyNames.Data, () =>
+            var contractResolver = serializer.ContractResolver;
+            var enumerable = value as IEnumerable<object> ?? Enumerable.Empty<object>();
+            writer.WriteStartArray();
+            foreach (var valueElement in enumerable)
             {
-                var enumerable = value as IEnumerable<object> ?? Enumerable.Empty<object>();
-                writer.WriteStartArray();
-                foreach (var valueElement in enumerable)
-                {
-                    serializer.Serialize(writer, valueElement);
-                }
-                writer.WriteEndArray();
-            });
-
-            var probe = writer as AttributeOrRelationshipProbe;
-            if (probe != null)
-            {
-                //This converter will only run if the element type is a resource object
-                //so this whole array should be in a relationship node. 
-                //We do it after processing to prevent any items within the list from overriding
-                probe.PropertyType = AttributeOrRelationshipProbe.Type.Relationship;
+                if (valueElement == null || !(contractResolver.ResolveContract(valueElement.GetType()).Converter is ResourceObjectConverter))
+                    throw new JsonApiFormatException(writer.Path,
+                        $"Expected to find to find resource objects within lists, but found '{valueElement}'", 
+                        "Resource indentifier objects MUST contain 'id' members");
+                serializer.Serialize(writer, valueElement);
             }
+            writer.WriteEndArray();
         }
     }
 }
