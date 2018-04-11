@@ -1,5 +1,4 @@
-﻿using JsonApiSerializer.ContractResolvers;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Text.RegularExpressions;
@@ -33,5 +32,5 @@ namespace JsonApiSerializer.Util
 
             serializer.Serialize(writer, propValue);
         }
-    }   
+    }
 }

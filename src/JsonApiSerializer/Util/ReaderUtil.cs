@@ -22,7 +22,7 @@ namespace JsonApiSerializer.Util
             var lookAheadReader = reader.Fork();
             string id = null;
             string type = null;
-            foreach (var propName in ReaderUtil.IterateProperties(lookAheadReader))
+            foreach (var propName in IterateProperties(lookAheadReader))
             {
                 if (propName == PropertyNames.Id)
                 {
@@ -32,7 +32,6 @@ namespace JsonApiSerializer.Util
                             "The value of 'id' MUST be a string");
                     id = (string)lookAheadReader.Value;
                 }
-                    
                 else if (propName == PropertyNames.Type)
                 {
                     if (lookAheadReader.TokenType != JsonToken.String)
@@ -41,7 +40,7 @@ namespace JsonApiSerializer.Util
                             "The value of 'type' MUST be a string");
                     type = (string)lookAheadReader.Value;
                 }
-                    
+
                 //we have the data we need no point continuing to read the reader
                 if (id != null && type != null)
                     break;
@@ -58,7 +57,7 @@ namespace JsonApiSerializer.Util
         /// <exception cref="JsonApiFormatException">When reader is not at the start of an object</exception>
         public static IEnumerable<string> IterateProperties(JsonReader reader)
         {
-            
+
             if (reader.TokenType == JsonToken.Null)
                 yield break;
             if (reader.TokenType != JsonToken.StartObject)
@@ -68,11 +67,11 @@ namespace JsonApiSerializer.Util
                 var specInfo = new[] { "relationships", "attributes" }.Contains(propName)
                     ? $"The value of the '{propName}' key MUST be an object"
                     : null;
-                throw new JsonApiFormatException(reader.Path, 
-                    $"Expected to find json object at path '{reader.Path}'", 
+                throw new JsonApiFormatException(reader.Path,
+                    $"Expected to find json object at path '{reader.Path}'",
                     specInfo);
             }
-                
+
 
             reader.Read();
             while (reader.TokenType != JsonToken.EndObject)

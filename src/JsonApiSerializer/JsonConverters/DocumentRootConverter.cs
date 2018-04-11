@@ -102,7 +102,7 @@ namespace JsonApiSerializer.JsonConverters
                 var propType = propValue?.GetType() ?? prop.PropertyType;
                 switch (prop.PropertyName)
                 {
-                    case PropertyNames.Data when ListUtil.IsList(propType, out var elementType):
+                    case PropertyNames.Data when ListUtil.IsList(propType, out var _):
                         writer.WritePropertyName(prop.PropertyName);
                         propertiesOutput.Add(prop.PropertyName);
 
@@ -138,11 +138,10 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
 
-
             //A document MUST contain one of the following (data, errors, meta)
             //so if we do not have one of them we will output a null data
             if (!propertiesOutput.Contains(PropertyNames.Data)
-                && !propertiesOutput.Contains(PropertyNames.Errors) 
+                && !propertiesOutput.Contains(PropertyNames.Errors)
                 && !propertiesOutput.Contains(PropertyNames.Meta))
             {
                 propertiesOutput.Add(PropertyNames.Data);
@@ -194,9 +193,10 @@ namespace JsonApiSerializer.JsonConverters
 
             //determine the error class type. The type passed in could be an array or an object
             //so we need to determine the error type for both
-            Type errorElementType;
-            if (!ListUtil.IsList(objectType, out errorElementType))
+            if (!ListUtil.IsList(objectType, out var errorElementType))
+            {
                 errorElementType = objectType;
+            }
 
             //we do not have a root object, so this is probably the entry point, so we will resolve
             //a document root and return the data object

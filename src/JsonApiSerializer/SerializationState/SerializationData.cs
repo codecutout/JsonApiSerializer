@@ -8,7 +8,7 @@ namespace JsonApiSerializer.SerializationState
 {
     internal class SerializationData
     {
-        private static ConditionalWeakTable<object, SerializationData> _perSerializationData = new ConditionalWeakTable<object, SerializationData>();
+        private static readonly ConditionalWeakTable<object, SerializationData> _perSerializationData = new ConditionalWeakTable<object, SerializationData>();
 
         public static SerializationData GetSerializationData(JsonWriter writer)
         {
@@ -38,8 +38,5 @@ namespace JsonApiSerializer.SerializationState
         /// List to keep track of which includes we have already outputted the full object serialization
         /// </summary>
         public HashSet<ResourceObjectReference> RenderedIncluded = new HashSet<ResourceObjectReference>();
-
-
-
     }
 }

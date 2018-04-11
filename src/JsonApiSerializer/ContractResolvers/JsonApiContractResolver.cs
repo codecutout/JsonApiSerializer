@@ -1,5 +1,4 @@
 ﻿using System;
-using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonConverters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
