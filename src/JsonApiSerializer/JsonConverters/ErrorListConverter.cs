@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 
@@ -11,8 +10,7 @@ namespace JsonApiSerializer.JsonConverters
     {
         public static bool CanConvertStatic(Type objectType)
         {
-            Type elementType;
-            return ListUtil.IsList(objectType, out elementType) && ErrorConverter.CanConvertStatic(elementType);
+            return ListUtil.IsList(objectType, out var elementType) && ErrorConverter.CanConvertStatic(elementType);
         }
 
         public override bool CanConvert(Type objectType)
@@ -23,14 +21,12 @@ namespace JsonApiSerializer.JsonConverters
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             //we may be starting the deserialization here, if thats the case we need to resolve this object as the root
-            IEnumerable<IError> errors;
-            if (DocumentRootConverter.TryResolveAsRootError(reader, objectType, serializer, out errors))
+            if (DocumentRootConverter.TryResolveAsRootError(reader, objectType, serializer, out var errors))
             {
                 return ListUtil.CreateList(objectType, errors);
             }
 
-            Type elementType;
-            ListUtil.IsList(objectType, out elementType);
+            ListUtil.IsList(objectType, out var elementType);
 
             return ListUtil.CreateList(objectType,
                 ReaderUtil.IterateList(reader)

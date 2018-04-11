@@ -22,22 +22,19 @@ namespace JsonApiSerializer.JsonConverters
 
         public override bool CanConvert(Type objectType)
         {
-            Type elementType;
-            return ListUtil.IsList(objectType, out elementType) && ResourceObjectConverter.CanConvert(elementType);
+            return ListUtil.IsList(objectType, out var elementType) && ResourceObjectConverter.CanConvert(elementType);
         }
-        
+
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            object list;
-            if (DocumentRootConverter.TryResolveAsRootData(reader, objectType, serializer, out list))
+            if (DocumentRootConverter.TryResolveAsRootData(reader, objectType, serializer, out var list))
                 return list;
 
             //read into the 'Data' path
             var preDataPath = ReaderUtil.ReadUntilStart(reader, DataPathRegex);
-            
+
             //we should be dealing with list types, but we also want the element type
-            Type elementType;
-            if (!ListUtil.IsList(objectType, out elementType))
+            if (!ListUtil.IsList(objectType, out var elementType))
                 throw new ArgumentException($"{typeof(ResourceObjectListConverter)} can only read json lists", nameof(objectType));
 
             var itemsIterator = ReaderUtil.IterateList(reader).Select(x => serializer.Deserialize(reader, elementType));
@@ -61,7 +58,7 @@ namespace JsonApiSerializer.JsonConverters
             {
                 if (valueElement == null || !(contractResolver.ResolveContract(valueElement.GetType()).Converter is ResourceObjectConverter))
                     throw new JsonApiFormatException(writer.Path,
-                        $"Expected to find to find resource objects within lists, but found '{valueElement}'", 
+                        $"Expected to find to find resource objects within lists, but found '{valueElement}'",
                         "Resource indentifier objects MUST contain 'id' members");
                 serializer.Serialize(writer, valueElement);
             }

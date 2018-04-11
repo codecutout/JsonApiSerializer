@@ -18,7 +18,7 @@ namespace JsonApiSerializer.JsonConverters
                 || TypeInfoShim.GetPropertyFromInhertianceChain(typeInfo, PropertyNames.Links) != null;
         }
 
-        
+
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
@@ -35,7 +35,7 @@ namespace JsonApiSerializer.JsonConverters
                 var propType = propValue?.GetType() ?? prop.PropertyType;
                 switch (prop.PropertyName)
                 {
-                    case PropertyNames.Data when ListUtil.IsList(propType, out var elementType):
+                    case PropertyNames.Data when ListUtil.IsList(propType, out var _):
                         writer.WritePropertyName(prop.PropertyName);
                         if (propValue == null)
                         {
@@ -48,7 +48,7 @@ namespace JsonApiSerializer.JsonConverters
                         break;
                     case PropertyNames.Data:
                         writer.WritePropertyName(prop.PropertyName);
-                        if(propValue == null)
+                        if (propValue == null)
                         {
                             writer.WriteNull();
                             break;
