@@ -1,10 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Data\Articles\sample.json" />
   </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Data\Articles\author-comments-null.json" />
     <EmbeddedResource Include="Data\Articles\sample-error-two-class-single-include.json" />
@@ -16,24 +19,21 @@
     <EmbeddedResource Include="Data\Articles\sample-error-type-not-string.json" />
     <EmbeddedResource Include="Data\Articles\sample-out-of-order.json" />
     <EmbeddedResource Include="Data\Articles\single-item.json" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Data\Articles\sample.json" />
     <EmbeddedResource Include="Data\Errors\multiple.json" />
     <EmbeddedResource Include="Data\Errors\single.json" />
   </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="AutoFixture" Version="3.51.0" />
+    <PackageReference Include="AutoFixture" Version="4.2.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.4.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\JsonApiSerializer\JsonApiSerializer.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
 </Project>
