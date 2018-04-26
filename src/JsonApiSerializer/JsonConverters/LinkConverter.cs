@@ -27,7 +27,7 @@ namespace JsonApiSerializer.JsonConverters
             {
                 link.Href = (string)reader.Value;
             }
-            else
+            else if(reader.TokenType != JsonToken.Null)
             {
                 serializer.Populate(reader, link);
             }
