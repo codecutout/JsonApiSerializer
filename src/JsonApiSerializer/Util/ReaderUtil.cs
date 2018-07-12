@@ -63,23 +63,43 @@ namespace JsonApiSerializer.Util
                 yield break;
             if (reader.TokenType != JsonToken.StartObject)
             {
-                //check if we are an object that the json:api spec says is mandatory to be an object
-                var propName = reader.Path.Split('.').LastOrDefault();
-                var specInfo = new[] { "relationships", "attributes" }.Contains(propName)
-                    ? $"The value of the '{propName}' key MUST be an object"
-                    : null;
-                throw new JsonApiFormatException(reader.Path, 
-                    $"Expected to find json object at path '{reader.Path}'", 
-                    specInfo);
+                var path = reader is ForkableJsonReader forkreader 
+                    ? forkreader.FullPath 
+                    : reader.Path;
+
+                var propName = path.Split('.').LastOrDefault();
+                if(new[] { "relationships", "attributes" }.Contains(propName))
+                {
+                    //we are an object that the json:api spec says is mandatory to be an object
+                    throw new JsonApiFormatException(path,
+                      $"Expected to find json object at path '{path}'",
+                      $"The value of the '{propName}' key MUST be an object");
+                }
+                else if (reader.TokenType == JsonToken.StartArray)
+                {
+                    //we have an object rather than an array. Usually occurs if the class model doesnt match the json format
+                    throw new JsonApiFormatException(path,
+                      $"Expected to find json object at path '{path}' but found an array. This json property needs to be deserialized into a list like object");
+                }
+                else
+                {
+                    throw new JsonApiFormatException(path,
+                     $"Expected to find json object at path '{path}' but found '{reader.Value}'");
+                }
+              
             }
-                
 
             reader.Read();
             while (reader.TokenType != JsonToken.EndObject)
             {
                 //this error only gets thrown if a caller puts the JsonReader in an odd state
                 if (reader.TokenType != JsonToken.PropertyName)
-                    throw new JsonApiFormatException(reader.Path, $"Expected {JsonToken.PropertyName} in reader");
+                {
+                    var path = reader is ForkableJsonReader forkreader
+                        ? forkreader.FullPath
+                        : reader.Path;
+                    throw new JsonApiFormatException(path, $"Expected {JsonToken.PropertyName} in reader but found '{reader.Value}'");
+                }
                 var jsonPropName = reader.Value;
                 var startPath = reader.Path;
                 reader.Read();
