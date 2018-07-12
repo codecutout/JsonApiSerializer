@@ -95,5 +95,18 @@ namespace JsonApiSerializer.Test.DeserializationTests
                 json,
                 settings));
         }
+
+        [Fact]
+        public void When_array_deserize_as_object_should_throw_exception()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.sample.json");
+            var settings = new JsonApiSerializerSettings();
+
+            var exception = Assert.Throws<JsonApiFormatException>(() => JsonConvert.DeserializeObject<Article>(
+                json,
+                settings));
+
+            Assert.Equal("data", exception.Path);
+        }
     }
 }
