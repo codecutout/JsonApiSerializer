@@ -55,7 +55,7 @@ namespace JsonApiSerializer.JsonConverters
 
                     if (!serializationData.Included.TryGetValue(reference, out existingValue))
                     {
-                        existingValue = contract.DefaultCreator();
+                        existingValue = CreateDefault(contract, reference.Type);
                         serializationData.Included.Add(reference, existingValue);
                     }
                     if (existingValue is JObject existingValueJObject)
@@ -65,7 +65,7 @@ namespace JsonApiSerializer.JsonConverters
                         //before the item). In these cases we will create a new object and read data from the JObject
                         dataReader = new ForkableJsonReader(existingValueJObject.CreateReader(), dataReader.SerializationDataToken);
                         dataReader.Read(); //JObject readers begin at Not Started
-                        existingValue = contract.DefaultCreator();
+                        existingValue = CreateDefault(contract, reference.Type);
                         serializationData.Included[reference] = existingValue;
                     }
                 }
@@ -320,6 +320,17 @@ namespace JsonApiSerializer.JsonConverters
         protected virtual string GenerateDefaultTypeName(Type type)
         {
             return type.Name.ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Exposes contract to allow overriding object initialisation based on resource type during deserialization.
+        /// </summary>
+        /// <param name="contract"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        protected virtual object CreateDefault(JsonObjectContract contract, string type)
+        {
+            return contract.DefaultCreator();
         }
     }
 }
