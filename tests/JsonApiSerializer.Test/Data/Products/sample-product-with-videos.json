@@ -1,0 +1,34 @@
+﻿{
+  "data": {
+    "type": "products",
+    "id": "1",
+    "attributes": {
+        "marketingName": "JSON API paints my bikeshed!"
+    },
+    "relationships": {
+      "content": {
+        "links": {
+          "self": "http://example.com/products/1/relationships/content",
+          "related": "http://example.com/products/1/content"
+        },
+        "data": { "type": "videos", "id": "9" }
+      }
+    },
+    "links": {
+      "self": "http://example.com/products/1"
+    }
+  },
+  "included": [
+    {
+      "type": "videos",
+      "id": "9",
+      "attributes": {
+        "title": "Live Free or Die Hard",
+        "videoType": "mp4"
+      },
+      "links": {
+        "self": "http://example.com/videos/9"
+      }
+    }
+  ]
+}
