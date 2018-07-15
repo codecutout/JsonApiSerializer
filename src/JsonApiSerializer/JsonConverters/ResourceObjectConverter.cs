@@ -40,11 +40,15 @@ namespace JsonApiSerializer.JsonConverters
                 DataReadPathRegex, 
                 dataReader =>
             {
+                //if they have custom convertors registered, we will respect them
+                var customConvertor = serializer.Converters.FirstOrDefault(x => x.CanRead && x.CanConvert(objectType));
+                if (customConvertor != null && customConvertor != this)
+                    return customConvertor.ReadJson(reader, objectType, existingValue, serializer);
+
                 //if the value has been explicitly set to null then the value of the element is simply null
                 if (dataReader.TokenType == JsonToken.Null)
                     return null;
 
-                JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(objectType);
                 var serializationData = SerializationData.GetSerializationData(dataReader);
                 
                 //if we arent given an existing value check the references to see if we have one in there
@@ -55,7 +59,7 @@ namespace JsonApiSerializer.JsonConverters
 
                     if (!serializationData.Included.TryGetValue(reference, out existingValue))
                     {
-                        existingValue = CreateDefault(contract, reference.Type);
+                        existingValue = CreateObject(objectType, reference.Type, serializer);
                         serializationData.Included.Add(reference, existingValue);
                     }
                     if (existingValue is JObject existingValueJObject)
@@ -65,19 +69,25 @@ namespace JsonApiSerializer.JsonConverters
                         //before the item). In these cases we will create a new object and read data from the JObject
                         dataReader = new ForkableJsonReader(existingValueJObject.CreateReader(), dataReader.SerializationDataToken);
                         dataReader.Read(); //JObject readers begin at Not Started
-                        existingValue = CreateDefault(contract, reference.Type);
+                        existingValue = CreateObject(objectType, reference.Type, serializer);
                         serializationData.Included[reference] = existingValue;
                     }
                 }
 
-                PopulateProperties(serializer, existingValue, dataReader, contract);
+                //additional check to ensure the object we created is of the correct type
+                if (!TypeInfoShim.IsInstanceOf(objectType.GetTypeInfo(), existingValue))
+                    throw new JsonSerializationException($"Unable to assign object '{existingValue}' to type '{objectType}'");
+
+                PopulateProperties(serializer, existingValue, dataReader);
                 return existingValue;
             });
         }
 
 
-        protected void PopulateProperties(JsonSerializer serializer, object obj, JsonReader reader, JsonObjectContract contract)
+        protected void PopulateProperties(JsonSerializer serializer, object obj, JsonReader reader)
         {
+            JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(obj.GetType());
+            
             foreach (var propName in ReaderUtil.IterateProperties(reader))
             {
                 var successfullyPopulateProperty = ReaderUtil.TryPopulateProperty(
@@ -119,6 +129,14 @@ namespace JsonApiSerializer.JsonConverters
         {
             if (DocumentRootConverter.TryResolveAsRootData(writer, value, serializer))
                 return;
+
+            //if they have custom convertors registered, we will respect them
+            var customConvertor = serializer.Converters.FirstOrDefault(x => x.CanWrite && x.CanConvert(value.GetType()));
+            if (customConvertor != null && customConvertor != this)
+            {
+                customConvertor.WriteJson(writer, value, serializer);
+                return;
+            }
 
             var isRelationship = RelationshipPathRegex.IsMatch(writer.Path);
             if (isRelationship)
@@ -325,11 +343,25 @@ namespace JsonApiSerializer.JsonConverters
         /// <summary>
         /// Exposes contract to allow overriding object initialisation based on resource type during deserialization.
         /// </summary>
-        /// <param name="contract"></param>
-        /// <param name="type"></param>
+        /// <param name="objectType">Type of the property that the created object will be assigned to</param>
+        /// <param name="jsonapiType">Type field specified on on the json api document</param>
+        /// <param name="serializer">The serializer.</param>
         /// <returns></returns>
-        protected virtual object CreateDefault(JsonObjectContract contract, string type)
+        /// <exception cref="Exception"></exception>
+        protected virtual object CreateObject(Type objectType, string jsonapiType, JsonSerializer serializer)
         {
+            var contract = serializer.ContractResolver.ResolveContract(objectType);
+            if (contract.DefaultCreator == null)
+            {
+                var typeInfo = objectType.GetTypeInfo();
+                if (typeInfo.IsInterface)
+                    throw new JsonSerializationException($"Could not create an instance of type {objectType}. Type is an interface and cannot be instantiated.");
+                else if (typeInfo.IsAbstract)
+                    throw new JsonSerializationException($"Could not create an instance of type {objectType}. Type is an abstract class and cannot be instantiated.");
+                else
+                    throw new JsonSerializationException($"Could not create an instance of type {objectType}.");
+            }
+
             return contract.DefaultCreator();
         }
     }

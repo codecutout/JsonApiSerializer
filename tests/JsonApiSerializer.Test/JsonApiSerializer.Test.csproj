@@ -5,14 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Data\Articles\sample-with-inherited-types.json" />
     <None Remove="Data\Articles\sample-with-link-null.json" />
     <None Remove="Data\Articles\sample.json" />
-    <None Remove="Data\Products\sample-product-with-images.json" />
-    <None Remove="Data\Products\sample-product-with-videos.json" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Data\Articles\author-comments-null.json" />
+    <EmbeddedResource Include="Data\Articles\sample-with-inherited-types.json" />
     <EmbeddedResource Include="Data\Articles\sample-with-link-null.json" />
     <EmbeddedResource Include="Data\Articles\sample-error-two-class-single-include.json" />
     <EmbeddedResource Include="Data\Articles\sample-error-model-not-match-values.json" />
@@ -26,8 +26,6 @@
     <EmbeddedResource Include="Data\Articles\sample.json" />
     <EmbeddedResource Include="Data\Errors\multiple.json" />
     <EmbeddedResource Include="Data\Errors\single.json" />
-    <EmbeddedResource Include="Data\Products\sample-product-with-images.json" />
-    <EmbeddedResource Include="Data\Products\sample-product-with-videos.json" />
   </ItemGroup>
 
   <ItemGroup>

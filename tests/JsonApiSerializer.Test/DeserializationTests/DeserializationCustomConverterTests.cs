@@ -1,57 +1,89 @@
 ﻿using System;
 using System.Collections.Generic;
-using JsonApiSerializer.JsonConverters;
-using JsonApiSerializer.Test.Models.Products;
+using JsonApiSerializer.Test.Models.Articles;
 using JsonApiSerializer.Test.Models.Timer;
 using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Xunit;
 
 namespace JsonApiSerializer.Test.DeserializationTests
 {
-    public class DeserializationCustomConverterTests
+    public partial class DeserializationCustomConverterTests
     {
-        private class ProductContentConverter : ResourceObjectConverter
+        [Fact]
+        public void When_custom_convertor_with_subclass_types_should_deserialize_as_types()
         {
-            protected override object CreateDefault(JsonObjectContract contract, string type)
+            var json = EmbeddedResource.Read("Data.Articles.sample-with-inherited-types.json");
+            var settings = new JsonApiSerializerSettings();
+            settings.Converters.Add(new SubclassResourceObjectConverter<Comment>(new Dictionary<string,Type>()
             {
-                switch (type)
-                {
-                    case "videos":
-                        contract.DefaultCreator = () => new Video();
-                        break;
-                    case "images":
-                        contract.DefaultCreator = () => new Image();
-                        break;
-                }
-
-                return contract.DefaultCreator();
-            }
-        }
-
-        public static IEnumerable<object[]> ProductsTestData
-        {
-            get
+                { "comments-reply", typeof(CommentReply) }
+            }));
+            settings.Converters.Add(new SubclassResourceObjectConverter<Person>(new Dictionary<string, Type>()
             {
-                yield return new object[]
-                    {EmbeddedResource.Read("Data.Products.sample-product-with-images.json"), typeof(Image)};
-                yield return new object[]
-                    {EmbeddedResource.Read("Data.Products.sample-product-with-videos.json"), typeof(Video)};
-            }
+                { "people-admin", typeof(PersonAdmin) }
+            }));
+
+
+            var articles = JsonConvert.DeserializeObject<Article[]>(json, settings);
+
+            var article = articles[0];
+
+            Assert.IsType<Comment>(article.Comments[0]);
+            Assert.IsType<Comment>(article.Comments[1]);
+            Assert.IsType<CommentReply>(article.Comments[2]);
+            Assert.Equal(article.Comments[1], ((CommentReply)article.Comments[2]).ResponeTo);
+
+            Assert.IsType<PersonAdmin>(article.Author);
+            Assert.Equal(new[] {"edit", "delete" }, ((PersonAdmin)article.Author).AdministratorRights);
         }
 
-        [Theory]
-        [MemberData(nameof(ProductsTestData))]
-        public void When_resource_type_is_generic_should_deserialize(string json, Type type)
+        [Fact]
+        public void When_custom_convertor_with_interface_types_should_deserialize_as_types()
         {
-            var product = JsonConvert.DeserializeObject<Product>(json, GetSerializerSettings());
-            Assert.IsType(type, product.Content.Data);
+            var json = EmbeddedResource.Read("Data.Articles.sample-with-inherited-types.json");
+            var settings = new JsonApiSerializerSettings();
+            settings.Converters.Add(new SubclassResourceObjectConverter<ArticleWithInterface.IResourceObject> (new Dictionary<string, Type>()
+            {
+                { "comments", typeof(ArticleWithInterface.CommentWithInterface) },
+                { "comments-reply", typeof(ArticleWithInterface.CommentReplyWithInterface) },
+                { "people", typeof(ArticleWithInterface.PersonWithInterface) },
+                { "people-admin", typeof(ArticleWithInterface.PersonAdminWithInterface) }
+            }));
+
+            var articles = JsonConvert.DeserializeObject<ArticleWithInterface[]>(json, settings);
+
+            var article = articles[0];
+
+            Assert.IsType<ArticleWithInterface.CommentWithInterface>(article.Comments[0]);
+            Assert.IsType<ArticleWithInterface.CommentWithInterface>(article.Comments[1]);
+            Assert.IsType<ArticleWithInterface.CommentReplyWithInterface>(article.Comments[2]);
+            Assert.Equal((ArticleWithInterface.CommentWithInterface)article.Comments[1], ((ArticleWithInterface.CommentReplyWithInterface)article.Comments[2]).ResponeTo);
+
+            Assert.IsType<ArticleWithInterface.PersonAdminWithInterface>(article.Author);
+            Assert.Equal(new[] { "edit", "delete" }, ((ArticleWithInterface.PersonAdminWithInterface)article.Author).AdministratorRights);
         }
 
-        private static JsonSerializerSettings GetSerializerSettings()
+        [Fact]
+        public void When_custom_convertor_with_interface_types_not_defined_should_error()
         {
-            return new JsonApiSerializerSettings(new ProductContentConverter());
+            var json = EmbeddedResource.Read("Data.Articles.sample-with-inherited-types.json");
+            var settings = new JsonApiSerializerSettings();
+
+            var error = Assert.Throws<JsonSerializationException>(() => JsonConvert.DeserializeObject<ArticleWithInterface[]>(json, settings));
+        }
+
+        [Fact]
+        public void When_resource_object_custom_convertor_defined_with_attributes_should_deserialize_as_types()
+        {
+            var json = EmbeddedResource.Read("Data.Articles.sample-with-inherited-types.json");
+            var settings = new JsonApiSerializerSettings();
+
+            var articles = JsonConvert.DeserializeObject<ArticleWithResourceObjectCustomConvertor[]>(json, settings);
+
+            var article = articles[0];
+            Assert.IsType<PersonAdmin>(article.Author);
+            Assert.Equal(new[] { "edit", "delete" }, ((PersonAdmin)article.Author).AdministratorRights);
         }
 
         [Fact]

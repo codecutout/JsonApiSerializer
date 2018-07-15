@@ -276,6 +276,48 @@ var settings = new JsonApiSerializerSettings(new MyOwnJsonSerializer())
 Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, settings);
 ```
 
+### Determine object type during deserialization
+The default behaviour is to assume that the object type declared on your property is the type that will be created during deserialization. However there are times where you may want the property to be declared as an interface or abstract class and then determine the actual type to instantiate during deserialization. 
+
+This can be achieved by creating a custom `JsonConvertor` extending from `ResoruceObjectConvertor` and overriding `CreateObject`. You can then provide custom logic in creating the object, typically this would be done by examing hte json:api type.
+
+```csharp
+    public class MyTypeDeterminingResourceObjectConvertor : ResourceObjectConverter
+    {
+        protected override object CreateObject(Type objectType, string jsonapiType, JsonSerializer serializer)
+        {
+            switch (jsonapiType)
+            {
+                case "vip-person":
+                    return new PersonVIP();
+                case "person":
+                    return new Person();
+                default:
+                    return base.CreateObject(objectType, jsonapiType, serializer);
+            }
+        }
+    }
+```
+
+This convertor can be added into the system in a number of ways 
+
+1. Adding it globally to all resource objects by specifiying during the creation of the `JsonApiSerializerSettings`
+```csharp
+var settings = new JsonApiSerializerSettings(new MyTypeDeterminingResourceObjectConvertor())
+Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, settings);
+```
+2. Adding to everything that matches the `CanConvert` method on your customer converter. If doing this you would want to override the `CanConvert` method so it only targets object types you want to use the new convertor.
+```csharp
+var settings = new JsonApiSerializerSettings()
+settings.Converters.Add(new MyTypeDeterminingResourceObjectConvertor())
+Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, settings);
+```
+3. Add to your model by annotating it with a `JsonConvertorAttribute`. This behaviour is identical to usage by json.net
+```csharp
+[JsonConvertor(typeof(MyTypeDeterminingResourceObjectConvertor))]
+public IPerson Author {get; set;}
+```
+
 ### Integrating with Microsoft.AspNetCore.Mvc
 
 You can configure json:api to be the default serialization for your MVC site by reconfiguring the `JsonInputFormatter` and `JsonOutputFormatter` to use the `JsonApiSerializerSettings`
