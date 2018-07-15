@@ -46,6 +46,15 @@ namespace JsonApiSerializer.Util
             return propInfo;
         }
 
+        public static bool IsInstanceOf(TypeInfo info, object obj)
+        {
+#if NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_2 || NETSTANDARD1_3 || NETSTANDARD1_4
+            return obj == null || info.IsAssignableFrom(obj.GetType().GetTypeInfo());
+#else
+            return info.IsInstanceOfType(obj);
+#endif
+        }
+
 
     }
 }
