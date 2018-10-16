@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace JsonApiSerializer.Util
 {
-     public static class TypeInfoShim
+    public static class TypeInfoShim
     {
         public static IEnumerable<Type> GetInterfaces(TypeInfo info)
         {
@@ -55,6 +55,16 @@ namespace JsonApiSerializer.Util
 #endif
         }
 
-
+        public static MemberInfo[] GetDefaultMembers(TypeInfo info)
+        {
+#if NETSTANDARD1_0 || NETSTANDARD1_1 || NETSTANDARD1_2 || NETSTANDARD1_3 || NETSTANDARD1_4
+            var attribute = info.GetCustomAttribute<DefaultMemberAttribute>(true);
+            var defaultMemberName = attribute?.MemberName ?? "Item";
+            var itemProperty = GetPropertyFromInhertianceChain(info, defaultMemberName);
+            return new MemberInfo[]{itemProperty};
+#else
+            return info.GetDefaultMembers();
+#endif
+        }
     }
 }

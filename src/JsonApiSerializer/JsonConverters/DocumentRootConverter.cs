@@ -16,9 +16,14 @@ namespace JsonApiSerializer.JsonConverters
     {
         public static bool CanConvertStatic(Type objectType)
         {
-            return TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
-                .Select(x => x.GetTypeInfo())
-                .Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
+            var typeInfo = objectType.GetTypeInfo();
+
+            var interfaces = TypeInfoShim.GetInterfaces(typeInfo)
+                .Select(x => x.GetTypeInfo());
+            if (typeInfo.IsInterface)
+                interfaces = new[] { typeInfo }.Concat(interfaces);
+
+            return interfaces.Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
         }
 
         public override bool CanConvert(Type objectType)
