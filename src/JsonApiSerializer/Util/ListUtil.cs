@@ -8,12 +8,6 @@ namespace JsonApiSerializer.Util
 {
     internal static class ListUtil
     {
-        public static bool IsList(Type type)
-        {
-            Type output;
-            return IsList(type, out output);
-        }
-
         /// <summary>
         /// Determines whether the specified type is list.
         /// </summary>
@@ -34,7 +28,7 @@ namespace JsonApiSerializer.Util
             if (type != typeof(string) && typeof(IEnumerable).GetTypeInfo().IsAssignableFrom(typeInfo))
             {
                 var genericEnumerableType = new[] { type }.Concat(TypeInfoShim.GetInterfaces(typeInfo))
-                    .Select(t=>t.GetTypeInfo())
+                    .Select(t => t.GetTypeInfo())
                     .FirstOrDefault(ti => ti.IsGenericType && ti.GetGenericTypeDefinition() == typeof(IEnumerable<>));
 
                 elementType = genericEnumerableType?.GenericTypeArguments[0] ?? typeof(object);
