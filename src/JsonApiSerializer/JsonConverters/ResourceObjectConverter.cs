@@ -85,7 +85,6 @@ namespace JsonApiSerializer.JsonConverters
             });
         }
 
-
         protected void PopulateProperties(JsonSerializer serializer, object obj, JsonReader reader)
         {
             JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(obj.GetType());
@@ -208,30 +207,28 @@ namespace JsonApiSerializer.JsonConverters
                 : typeProperty.ValueProvider?.GetValue(value).ToString() ?? GetDefaultTypeName(valueType);
             serializer.Serialize(writer, type);
 
-            var linksProperty = contract.Properties.GetClosestMatchProperty(PropertyNames.Links);
-            if (linksProperty != null && linksProperty.Ignored != true)
+            void SerializeKnownProperty(string name)
             {
-                var propValue = linksProperty.ValueProvider.GetValue(value);
+                var metaProperty = contract.Properties.GetClosestMatchProperty(name);
 
-                if (propValue != null || (linksProperty.NullValueHandling ?? serializer.NullValueHandling) != NullValueHandling.Ignore)
+                if (metaProperty == null || metaProperty.Ignored)
                 {
-                    writer.WritePropertyName(PropertyNames.Links);
-                    serializer.Serialize(writer, propValue);
+                    return;
                 }
-            }
 
-            var metaProperty = contract.Properties.GetClosestMatchProperty(PropertyNames.Meta);
-            if (metaProperty != null && metaProperty.Ignored != true)
-            {
                 var propValue = metaProperty.ValueProvider.GetValue(value);
 
-                if (propValue != null || (metaProperty.NullValueHandling ?? serializer.NullValueHandling) != NullValueHandling.Ignore)
+                if (propValue == null && (metaProperty.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
                 {
-                    writer.WritePropertyName(PropertyNames.Meta);
-                    serializer.Serialize(writer, propValue);
+                    return;
                 }
+
+                writer.WritePropertyName(name);
+                serializer.Serialize(writer, propValue);
             }
 
+            SerializeKnownProperty(PropertyNames.Links);
+            SerializeKnownProperty(PropertyNames.Meta);
 
             var didWriteAttributes = false;
 
@@ -312,14 +309,12 @@ namespace JsonApiSerializer.JsonConverters
 
             writer.WriteEndObject();
 
-            // TODO: Question, do we only want to do this if we get an id and type?
-
             if (id == null)
             {
                 return;
             }
 
-            //add reference to this type, so others can reference it
+            // add reference to this type, so others can reference it
             var serializationData = SerializationData.GetSerializationData(writer);
             var reference = new ResourceObjectReference(id, type);
             serializationData.RenderedIncluded.Add(reference);
