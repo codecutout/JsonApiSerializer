@@ -215,7 +215,7 @@ namespace JsonApiSerializer.JsonConverters
                 if (propValue != null || (linksProperty.NullValueHandling ?? serializer.NullValueHandling) !=
                     NullValueHandling.Ignore)
                 {
-                    writer.WritePropertyName(nameof(PropertyNames.Links), false);
+                    writer.WritePropertyName(PropertyNames.Links, false);
                     serializer.Serialize(writer, propValue);
                 }
             }
@@ -228,7 +228,7 @@ namespace JsonApiSerializer.JsonConverters
                 if (propValue != null || (metaProperty.NullValueHandling ?? serializer.NullValueHandling) !=
                     NullValueHandling.Ignore)
                 {
-                    writer.WritePropertyName(nameof(PropertyNames.Meta), false);
+                    writer.WritePropertyName(PropertyNames.Meta, false);
                     serializer.Serialize(writer, propValue);
                 }
             }

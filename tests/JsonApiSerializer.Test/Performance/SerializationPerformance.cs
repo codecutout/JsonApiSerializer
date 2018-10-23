@@ -28,7 +28,7 @@ namespace JsonApiSerializer.Test.Performance
                 Data = data.ToList()
             };
 
-            for (var j = 0; j < 1000; ++j)
+            for (var j = 0; j < 100; ++j)
             {
                 JsonConvert.SerializeObject(root, settings);
             }
