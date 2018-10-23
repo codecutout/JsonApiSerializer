@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -23,7 +24,7 @@ namespace JsonApiSerializer.JsonConverters
     {
         private static readonly Regex DataReadPathRegex = new Regex($@"^$|{PropertyNames.Included}(\[\d+\])?$|{"data"}(\[\d+\])?$");
 
-        private readonly Dictionary<Type, string> typeNames = new Dictionary<Type, string>();
+        private readonly ConcurrentDictionary<Type, string> typeNames = new ConcurrentDictionary<Type, string>();
 
         public override bool CanConvert(Type objectType)
         {
@@ -435,14 +436,7 @@ namespace JsonApiSerializer.JsonConverters
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetDefaultTypeName(Type type)
         {
-            if (typeNames.TryGetValue(type, out var cachedTypeName))
-            {
-                return cachedTypeName;
-            }
-
-            var typeName = GenerateDefaultTypeName(type);
-            typeNames.Add(type, typeName);
-            return typeName;
+            return typeNames.GetOrAdd(type, GenerateDefaultTypeName);
         }
 
         /// <summary>
