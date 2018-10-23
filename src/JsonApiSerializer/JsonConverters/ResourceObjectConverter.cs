@@ -188,7 +188,7 @@ namespace JsonApiSerializer.JsonConverters
             writer.WriteStartObject();
 
             string id = null;
-            var idProperty = contract.Properties.GetProperty(PropertyNames.Id, StringComparison.OrdinalIgnoreCase);
+            var idProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Id));
             if (idProperty != null)
             {
                 id = idProperty.ValueProvider.GetValue(value)?.ToString();
@@ -200,7 +200,7 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             //A resource object MUST contain at least the following top-level members: type
-            var typeProperty = contract.Properties.GetProperty(PropertyNames.Type, StringComparison.OrdinalIgnoreCase);
+            var typeProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Type));
 
             writer.WritePropertyName(PropertyNames.Type, false);
             var type = typeProperty == null
@@ -210,7 +210,7 @@ namespace JsonApiSerializer.JsonConverters
 
             void SerializeKnownProperty(string name)
             {
-                var metaProperty = contract.Properties.GetProperty(name, StringComparison.OrdinalIgnoreCase);
+                var metaProperty = contract.Properties.GetClosestMatchProperty(name);
 
                 if (metaProperty == null || metaProperty.Ignored)
                 {
@@ -228,8 +228,8 @@ namespace JsonApiSerializer.JsonConverters
                 serializer.Serialize(writer, propValue);
             }
 
-            SerializeKnownProperty(PropertyNames.Links);
-            SerializeKnownProperty(PropertyNames.Meta);
+            SerializeKnownProperty(nameof(PropertyNames.Links));
+            SerializeKnownProperty(nameof(PropertyNames.Meta));
 
             var didWriteAttributes = false;
 
