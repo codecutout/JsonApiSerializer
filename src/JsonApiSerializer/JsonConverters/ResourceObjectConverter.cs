@@ -194,19 +194,19 @@ namespace JsonApiSerializer.JsonConverters
                 id = idProperty.ValueProvider.GetValue(value)?.ToString();
                 if (id != null)
                 {
-                    writer.WritePropertyName(PropertyNames.Id);
-                    serializer.Serialize(writer, id);
+                    writer.WritePropertyName(PropertyNames.Id, false);
+                    writer.WriteValue(id);
                 }
             }
 
             //A resource object MUST contain at least the following top-level members: type
             var typeProperty = contract.Properties.GetProperty(PropertyNames.Type, StringComparison.OrdinalIgnoreCase);
 
-            writer.WritePropertyName(PropertyNames.Type);
+            writer.WritePropertyName(PropertyNames.Type, false);
             var type = typeProperty == null
                 ? GetDefaultTypeName(valueType)
                 : typeProperty.ValueProvider?.GetValue(value).ToString() ?? GetDefaultTypeName(valueType);
-            serializer.Serialize(writer, type);
+            writer.WriteValue(type);
 
             void SerializeKnownProperty(string name)
             {
@@ -224,7 +224,7 @@ namespace JsonApiSerializer.JsonConverters
                     return;
                 }
 
-                writer.WritePropertyName(name);
+                writer.WritePropertyName(name, false);
                 serializer.Serialize(writer, propValue);
             }
 
@@ -236,6 +236,15 @@ namespace JsonApiSerializer.JsonConverters
             for (var index = 0; index < contract.Properties.Count; index++)
             {
                 var property = contract.Properties[index];
+
+                switch (property.PropertyName)
+                {
+                    case PropertyNames.Id:
+                    case PropertyNames.Type:
+                    case PropertyNames.Links:
+                    case PropertyNames.Meta:
+                        continue;
+                }
 
                 if (property.Ignored)
                 {
@@ -251,42 +260,45 @@ namespace JsonApiSerializer.JsonConverters
 
                 var propertyType = propertyValue?.GetType() ?? property.PropertyType;
 
-                switch (property.PropertyName)
+                var isRelationship = TryParseAsRelationship(contractResolver.ResolveContract(propertyType), propertyValue, out var relationshipObj);
+
+                if (isRelationship)
                 {
-                    case PropertyNames.Id:
-                    case PropertyNames.Type:
-                    case PropertyNames.Links:
-                    case PropertyNames.Meta:
-                        break;
+                    var collection = relationships ?? (relationships = new List<KeyValuePair<string, object>>());
 
-                    case var _ when TryParseAsRelationship(contractResolver.ResolveContract(propertyType), propertyValue, out var relationshipObj):
+                    collection.Add(new KeyValuePair<string, object>(property.PropertyName, relationshipObj));
 
-                        var collection = relationships ?? (relationships = new List<KeyValuePair<string, object>>());
-                        collection.Add(new KeyValuePair<string, object>(property.PropertyName, relationshipObj));
+                    continue;
+                }
 
-                        break;
+                if (!didWriteAttributes)
+                {
+                    didWriteAttributes = true;
 
-                    default:
-                        if (!didWriteAttributes)
-                        {
-                            didWriteAttributes = true;
+                    writer.WritePropertyName(PropertyNames.Attributes, false);
+                    writer.WriteStartObject();
+                }
 
-                            writer.WritePropertyName(PropertyNames.Attributes);
-                            writer.WriteStartObject();
-                        }
+                writer.WritePropertyName(property.PropertyName, false);
 
-                        writer.WritePropertyName(property.PropertyName);
-
-                        if (property.MemberConverter != null && property.MemberConverter.CanWrite)
-                        {
-                            property.MemberConverter.WriteJson(writer, propertyValue, serializer);
-                        }
-                        else
-                        {
-                            serializer.Serialize(writer, propertyValue);
-                        }
-
-                        break;
+                if (property.MemberConverter != null && property.MemberConverter.CanWrite)
+                {
+                    property.MemberConverter.WriteJson(writer, propertyValue, serializer);
+                }
+                else
+                {
+                    if (propertyValue is string s)
+                    {
+                        writer.WriteValue(s);
+                    }
+                    else if (propertyValue is int i)
+                    {
+                        writer.WriteValue(i);
+                    }
+                    else
+                    {
+                        serializer.Serialize(writer, propertyValue);
+                    }
                 }
             }
 
@@ -298,11 +310,12 @@ namespace JsonApiSerializer.JsonConverters
             // output our relationships
             if (relationships != null)
             {
-                writer.WritePropertyName(PropertyNames.Relationships);
+                writer.WritePropertyName(PropertyNames.Relationships, false);
                 writer.WriteStartObject();
                 foreach (var relationship in relationships)
                 {
-                    writer.WritePropertyName(relationship.Key);
+                    writer.WritePropertyName(relationship.Key, false);
+
                     serializer.Serialize(writer, relationship.Value);
                 }
                 writer.WriteEndObject();
@@ -360,12 +373,12 @@ namespace JsonApiSerializer.JsonConverters
             writer.WriteStartObject();
 
             //A "resource identifier object" MUST contain type and id members.
-            writer.WritePropertyName(PropertyNames.Id);
+            writer.WritePropertyName(PropertyNames.Id, false);
             var idProp = contract.Properties.GetClosestMatchProperty(PropertyNames.Id);
             var idVal = idProp?.ValueProvider?.GetValue(value) ?? string.Empty;
             serializer.Serialize(writer, idVal);
 
-            writer.WritePropertyName(PropertyNames.Type);
+            writer.WritePropertyName(PropertyNames.Type, false);
             var typeProp = contract.Properties.GetClosestMatchProperty(PropertyNames.Type);
             var typeVal = typeProp?.ValueProvider?.GetValue(value) ?? GetDefaultTypeName(value.GetType());
             serializer.Serialize(writer, typeVal);
@@ -394,7 +407,7 @@ namespace JsonApiSerializer.JsonConverters
                 var metaVal = metaProp?.ValueProvider?.GetValue(value);
                 if (metaVal != null)
                 {
-                    writer.WritePropertyName(PropertyNames.Meta);
+                    writer.WritePropertyName(PropertyNames.Meta, false);
                     serializer.Serialize(writer, metaVal);
                 }
             }

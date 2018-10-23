@@ -289,7 +289,5 @@ namespace JsonApiSerializer.JsonConverters
             [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public IEnumerable<TError> Errors { get; set; }
         }
-
     }
-
 }
