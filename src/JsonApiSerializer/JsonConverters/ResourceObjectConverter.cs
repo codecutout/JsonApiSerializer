@@ -187,6 +187,11 @@ namespace JsonApiSerializer.JsonConverters
 
             writer.WriteStartObject();
 
+            // certain properties are written outside of the attributes block
+            // we handle these first so that we can make a single pass through the
+            // properties collection
+
+            // id is optional
             string id = null;
             var idProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Id));
             if (idProperty != null)
@@ -199,7 +204,7 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
 
-            //A resource object MUST contain at least the following top-level members: type
+            // A resource object MUST contain at least the following top-level members: type
             var typeProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Type));
             var type = typeProperty == null
                 ? GetDefaultTypeName(valueType)
@@ -207,6 +212,7 @@ namespace JsonApiSerializer.JsonConverters
             writer.WritePropertyName(PropertyNames.Type, false);
             writer.WriteValue(type);
 
+            // links are optional
             var linksProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Links));
             if (linksProperty != null && !linksProperty.Ignored)
             {
@@ -220,6 +226,7 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
 
+            // meta is optional
             var metaProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Meta));
             if (metaProperty != null && !metaProperty.Ignored)
             {
@@ -239,6 +246,7 @@ namespace JsonApiSerializer.JsonConverters
             {
                 var property = contract.Properties[index];
 
+                // ignore all the well known properties we have already processed above
                 switch (property.PropertyName)
                 {
                     case PropertyNames.Id:
@@ -254,25 +262,28 @@ namespace JsonApiSerializer.JsonConverters
                 }
 
                 var propertyValue = property.ValueProvider.GetValue(value);
-
                 if (propertyValue == null && (property.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
                 {
                     continue;
                 }
 
-                var propertyType = propertyValue?.GetType() ?? property.PropertyType;
+                // check whether or not the current property is a relationship, if it is we need to stash it away to 
+                // process it later
 
-                var isRelationship = TryParseAsRelationship(contractResolver.ResolveContract(propertyType), propertyValue, out var relationshipObj);
+                var propertyType = propertyValue?.GetType() ?? property.PropertyType;
+                var propertyContract = contractResolver.ResolveContract(propertyType);
+                var isRelationship = TryParseAsRelationship(propertyContract, propertyValue, out var relationshipObj);
 
                 if (isRelationship)
                 {
                     var collection = relationships ?? (relationships = new List<KeyValuePair<string, object>>());
-
                     collection.Add(new KeyValuePair<string, object>(property.PropertyName, relationshipObj));
 
                     continue;
                 }
 
+                // at this point we must be in an attributes block as the property is neither well known nor 
+                // a relationship. if we haven't written out the attributes block yet, now is the time
                 if (!didWriteAttributes)
                 {
                     didWriteAttributes = true;
@@ -289,6 +300,10 @@ namespace JsonApiSerializer.JsonConverters
                 }
                 else
                 {
+                    // writing a property via `serializer.Serialize` is slow, 
+                    // for certain well known primitive types we can write the 
+                    // value directly to the JsonWriter
+
                     if (propertyValue is string s)
                     {
                         writer.WriteValue(s);
@@ -304,6 +319,7 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
 
+            // if we did write attributes make sure to close out the attributes block
             if (didWriteAttributes)
             {
                 writer.WriteEndObject();
