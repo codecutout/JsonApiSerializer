@@ -201,35 +201,37 @@ namespace JsonApiSerializer.JsonConverters
 
             //A resource object MUST contain at least the following top-level members: type
             var typeProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Type));
-
-            writer.WritePropertyName(PropertyNames.Type, false);
             var type = typeProperty == null
                 ? GetDefaultTypeName(valueType)
                 : typeProperty.ValueProvider?.GetValue(value).ToString() ?? GetDefaultTypeName(valueType);
+            writer.WritePropertyName(PropertyNames.Type, false);
             writer.WriteValue(type);
 
-            void SerializeKnownProperty(string name)
+            var linksProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Links));
+            if (linksProperty != null && !linksProperty.Ignored)
             {
-                var metaProperty = contract.Properties.GetClosestMatchProperty(name);
+                var propValue = linksProperty.ValueProvider.GetValue(value);
 
-                if (metaProperty == null || metaProperty.Ignored)
+                if (propValue != null || (linksProperty.NullValueHandling ?? serializer.NullValueHandling) !=
+                    NullValueHandling.Ignore)
                 {
-                    return;
+                    writer.WritePropertyName(nameof(PropertyNames.Links), false);
+                    serializer.Serialize(writer, propValue);
                 }
-
-                var propValue = metaProperty.ValueProvider.GetValue(value);
-
-                if (propValue == null && (metaProperty.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
-                {
-                    return;
-                }
-
-                writer.WritePropertyName(name, false);
-                serializer.Serialize(writer, propValue);
             }
 
-            SerializeKnownProperty(nameof(PropertyNames.Links));
-            SerializeKnownProperty(nameof(PropertyNames.Meta));
+            var metaProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Meta));
+            if (metaProperty != null && !metaProperty.Ignored)
+            {
+                var propValue = metaProperty.ValueProvider.GetValue(value);
+
+                if (propValue != null || (metaProperty.NullValueHandling ?? serializer.NullValueHandling) !=
+                    NullValueHandling.Ignore)
+                {
+                    writer.WritePropertyName(nameof(PropertyNames.Meta), false);
+                    serializer.Serialize(writer, propValue);
+                }
+            }
 
             var didWriteAttributes = false;
 

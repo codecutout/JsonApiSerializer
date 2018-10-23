@@ -34,7 +34,7 @@ namespace JsonApiSerializer.Test.Performance
             }
         }
 
-        [Fact(Skip = "slow")]
+        [Fact]
         public void WhenHasRelationships()
         {
             var data = Enumerable.Range(0, 10000).Select(i => new Article
