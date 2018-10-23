@@ -441,7 +441,7 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             var typeName = GenerateDefaultTypeName(type);
-            typeNames[type] = typeName;
+            typeNames.Add(type, typeName);
             return typeName;
         }
 
