@@ -133,21 +133,15 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             // if they have custom convertors registered, we will respect them
-            JsonConverter customConvertor = null;
-
-            foreach (var x in serializer.Converters)
+            for (var index = 0; index < serializer.Converters.Count; index++)
             {
-                if (x.CanWrite && x.CanConvert(value.GetType()))
+                var converter = serializer.Converters[index];
+
+                if (converter.CanWrite && converter.CanConvert(value.GetType()))
                 {
-                    customConvertor = x;
-                    break;
+                    converter.WriteJson(writer, value, serializer);
+                    return;
                 }
-            }
-
-            if (customConvertor != null)
-            {
-                customConvertor.WriteJson(writer, value, serializer);
-                return;
             }
 
             const string relationshipsKey = PropertyNames.Relationships + ".";
@@ -181,8 +175,6 @@ namespace JsonApiSerializer.JsonConverters
 
             // prepare to start capturing attributes and relationships
 
-            // default list size to the number of expected properties 
-            // to reduce allocations
             List<KeyValuePair<string, object>> relationships = null;
 
             writer.WriteStartObject();
@@ -193,7 +185,7 @@ namespace JsonApiSerializer.JsonConverters
 
             // id is optional
             string id = null;
-            var idProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Id));
+            var idProperty = contract.Properties.GetClosestMatchProperty(ClassPropertyNames.Id);
             if (idProperty != null)
             {
                 id = idProperty.ValueProvider.GetValue(value)?.ToString();
@@ -205,7 +197,7 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             // A resource object MUST contain at least the following top-level members: type
-            var typeProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Type));
+            var typeProperty = contract.Properties.GetClosestMatchProperty(ClassPropertyNames.Type);
             var type = typeProperty == null
                 ? GetDefaultTypeName(valueType)
                 : typeProperty.ValueProvider?.GetValue(value).ToString() ?? GetDefaultTypeName(valueType);
@@ -213,7 +205,7 @@ namespace JsonApiSerializer.JsonConverters
             writer.WriteValue(type);
 
             // links are optional
-            var linksProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Links));
+            var linksProperty = contract.Properties.GetClosestMatchProperty(ClassPropertyNames.Links);
             if (linksProperty != null && !linksProperty.Ignored)
             {
                 var propValue = linksProperty.ValueProvider.GetValue(value);
@@ -227,7 +219,7 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             // meta is optional
-            var metaProperty = contract.Properties.GetClosestMatchProperty(nameof(PropertyNames.Meta));
+            var metaProperty = contract.Properties.GetClosestMatchProperty(ClassPropertyNames.Meta);
             if (metaProperty != null && !metaProperty.Ignored)
             {
                 var propValue = metaProperty.ValueProvider.GetValue(value);
