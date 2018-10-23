@@ -157,7 +157,7 @@ namespace JsonApiSerializer.JsonConverters
 
             var relationshipsIndex = writerPath.IndexOf(relationshipsKey, StringComparison.Ordinal);
 
-            if (relationshipsIndex > 0 && writerPath.IndexOf(dataKey, relationshipsIndex, StringComparison.Ordinal) > 0)
+            if (relationshipsIndex > 0 && writerPath.IndexOf(dataKey, relationshipsIndex + relationshipsKey.Length, StringComparison.Ordinal) > 0)
             {
                 WriteReferenceObjectJson(writer, value, serializer);
             }
@@ -188,7 +188,7 @@ namespace JsonApiSerializer.JsonConverters
             writer.WriteStartObject();
 
             string id = null;
-            var idProperty = contract.Properties.GetClosestMatchProperty(PropertyNames.Id);
+            var idProperty = contract.Properties.GetProperty(PropertyNames.Id, StringComparison.OrdinalIgnoreCase);
             if (idProperty != null)
             {
                 id = idProperty.ValueProvider.GetValue(value)?.ToString();
@@ -200,7 +200,8 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             //A resource object MUST contain at least the following top-level members: type
-            var typeProperty = contract.Properties.GetClosestMatchProperty(PropertyNames.Type);
+            var typeProperty = contract.Properties.GetProperty(PropertyNames.Type, StringComparison.OrdinalIgnoreCase);
+
             writer.WritePropertyName(PropertyNames.Type);
             var type = typeProperty == null
                 ? GetDefaultTypeName(valueType)
@@ -209,7 +210,7 @@ namespace JsonApiSerializer.JsonConverters
 
             void SerializeKnownProperty(string name)
             {
-                var metaProperty = contract.Properties.GetClosestMatchProperty(name);
+                var metaProperty = contract.Properties.GetProperty(name, StringComparison.OrdinalIgnoreCase);
 
                 if (metaProperty == null || metaProperty.Ignored)
                 {
@@ -320,6 +321,7 @@ namespace JsonApiSerializer.JsonConverters
             serializationData.RenderedIncluded.Add(reference);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryParseAsRelationship(JsonContract contract, object value, out object relationshipObj)
         {
             switch (contract.Converter)
@@ -342,7 +344,8 @@ namespace JsonApiSerializer.JsonConverters
             }
         }
 
-        protected void WriteReferenceObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteReferenceObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             var contractResolver = serializer.ContractResolver;
 
