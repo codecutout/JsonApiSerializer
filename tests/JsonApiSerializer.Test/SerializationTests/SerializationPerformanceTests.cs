@@ -17,14 +17,14 @@ using Xunit.Abstractions;
 
 namespace JsonApiSerializer.Test.SerializationTests
 {
-    public class SerializationPerformanceTests
+    public class SerializationPerformanceBenchmarkTests
     {
-        public SerializationPerformanceTests(ITestOutputHelper output)
+        public SerializationPerformanceBenchmarkTests(ITestOutputHelper output)
         {
             this.output = output;
         }
 
-        [Fact]
+        [Fact(Skip = "Used for benchmarking only")]
         [Trait("Category", "performance")]
         public void When_compared_with_standard_json_serialization_should_be_comparable()
         {

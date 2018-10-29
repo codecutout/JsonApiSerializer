@@ -1,13 +1,14 @@
-﻿using JsonApiSerializer.Exceptions;
+﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonApi.WellKnown;
+using JsonApiSerializer.JsonConverters;
 using JsonApiSerializer.SerializationState;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -23,8 +24,6 @@ namespace JsonApiSerializer.JsonConverters
     public class ResourceObjectConverter : JsonConverter
     {
         private static readonly Regex DataReadPathRegex = new Regex($@"^$|{PropertyNames.Included}(\[\d+\])?$|{"data"}(\[\d+\])?$");
-
-        private readonly ConcurrentDictionary<Type, string> typeNames = new ConcurrentDictionary<Type, string>();
 
         public override bool CanConvert(Type objectType)
         {
@@ -129,9 +128,7 @@ namespace JsonApiSerializer.JsonConverters
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             if (DocumentRootConverter.TryResolveAsRootData(writer, value, serializer))
-            {
                 return;
-            }
 
             // if they have custom convertors registered, we will respect them
             for (var index = 0; index < serializer.Converters.Count; index++)
@@ -166,261 +163,159 @@ namespace JsonApiSerializer.JsonConverters
         private void WriteFullObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             var valueType = value.GetType();
-            var contractResolver = serializer.ContractResolver;
 
-            if (!(contractResolver.ResolveContract(valueType) is JsonObjectContract contract
-                 && contract.Converter is ResourceObjectConverter))
-                throw new JsonApiFormatException(writer.Path,
-                    $"Expected to find to find resource object, but found '{value}'",
-                    "Resource identifier objects MUST contain 'id' members");
-
-            // prepare to start capturing attributes and relationships
-
-            List<KeyValuePair<string, object>> relationships = null;
+            if(!(serializer.ContractResolver.ResolveContract(valueType) is ResourceObjectContract metadata))
+                throw new JsonApiFormatException(
+                      writer.Path,
+                      $"Expected to find to find resource object, but found '{value}'",
+                      "Resource indentifier objects MUST contain 'id' members");
+           
 
             writer.WriteStartObject();
 
-            // certain properties are written outside of the attributes block
-            // we handle these first so that we can make a single pass through the
-            // properties collection
-
-            // id is optional
-            string id = null;
-            var idProperty = contract.Properties.GetClosestMatchProperty(ClassPropertyNames.Id);
-            if (idProperty != null)
+            //serialize id
+            if (ShouldWriteProperty(value, metadata.IdProperty, serializer, out string id))
             {
-                id = idProperty.ValueProvider.GetValue(value)?.ToString();
-                if (id != null)
-                {
-                    writer.WritePropertyName(PropertyNames.Id, false);
-                    writer.WriteValue(id);
-                }
+                writer.WritePropertyName(PropertyNames.Id);
+                writer.WriteValue(id);
             }
 
-            // A resource object MUST contain at least the following top-level members: type
-            var typeProperty = contract.Properties.GetClosestMatchProperty(ClassPropertyNames.Type);
-            var type = typeProperty == null
-                ? GetDefaultTypeName(valueType)
-                : typeProperty.ValueProvider?.GetValue(value).ToString() ?? GetDefaultTypeName(valueType);
-            writer.WritePropertyName(PropertyNames.Type, false);
+            //serialize type. Will always out put a type
+            ShouldWriteProperty<string>(value, metadata.TypeProperty, serializer, out string type);
+            type = type ?? metadata.DefaultType;
+            writer.WritePropertyName(PropertyNames.Type);
             writer.WriteValue(type);
 
-            // links are optional
-            var linksProperty = contract.Properties.GetClosestMatchProperty(ClassPropertyNames.Links);
-            if (linksProperty != null && !linksProperty.Ignored)
+            //serialize links
+            if (ShouldWriteProperty(value, metadata.LinksProperty, serializer, out object links))
             {
-                var propValue = linksProperty.ValueProvider.GetValue(value);
-
-                if (propValue != null || (linksProperty.NullValueHandling ?? serializer.NullValueHandling) !=
-                    NullValueHandling.Ignore)
-                {
-                    writer.WritePropertyName(PropertyNames.Links, false);
-                    serializer.Serialize(writer, propValue);
-                }
+                writer.WritePropertyName(PropertyNames.Links);
+                serializer.Serialize(writer, links);
+            }
+            
+            //serialize meta
+            if (ShouldWriteProperty(value, metadata.MetaProperty, serializer, out object meta))
+            {
+                writer.WritePropertyName(PropertyNames.Meta);
+                serializer.Serialize(writer, meta);
             }
 
-            // meta is optional
-            var metaProperty = contract.Properties.GetClosestMatchProperty(ClassPropertyNames.Meta);
-            if (metaProperty != null && !metaProperty.Ignored)
+
+            //serialize attributes
+            var startedAttributeSection = false;
+            for(var i=0;i< metadata.Attributes.Length; i++)
             {
-                var propValue = metaProperty.ValueProvider.GetValue(value);
-
-                if (propValue != null || (metaProperty.NullValueHandling ?? serializer.NullValueHandling) !=
-                    NullValueHandling.Ignore)
+                var attributeProperty = metadata.Attributes[i];
+                if (ShouldWriteProperty(value, attributeProperty, serializer, out object attributeValue))
                 {
-                    writer.WritePropertyName(PropertyNames.Meta, false);
-                    serializer.Serialize(writer, propValue);
-                }
-            }
-
-            var didWriteAttributes = false;
-
-            for (var index = 0; index < contract.Properties.Count; index++)
-            {
-                var property = contract.Properties[index];
-
-                // ignore all the well known properties we have already processed above
-                switch (property.PropertyName)
-                {
-                    case PropertyNames.Id:
-                    case PropertyNames.Type:
-                    case PropertyNames.Links:
-                    case PropertyNames.Meta:
-                        continue;
-                }
-
-                if (property.Ignored)
-                {
-                    continue;
-                }
-
-                var propertyValue = property.ValueProvider.GetValue(value);
-                if (propertyValue == null && (property.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
-                {
-                    continue;
-                }
-
-                // check whether or not the current property is a relationship, if it is we need to stash it away to 
-                // process it later
-
-                var propertyType = propertyValue?.GetType() ?? property.PropertyType;
-                var propertyContract = contractResolver.ResolveContract(propertyType);
-                var isRelationship = TryParseAsRelationship(propertyContract, propertyValue, out var relationshipObj);
-
-                if (isRelationship)
-                {
-                    var collection = relationships ?? (relationships = new List<KeyValuePair<string, object>>());
-                    collection.Add(new KeyValuePair<string, object>(property.PropertyName, relationshipObj));
-
-                    continue;
-                }
-
-                // at this point we must be in an attributes block as the property is neither well known nor 
-                // a relationship. if we haven't written out the attributes block yet, now is the time
-                if (!didWriteAttributes)
-                {
-                    didWriteAttributes = true;
-
-                    writer.WritePropertyName(PropertyNames.Attributes, false);
-                    writer.WriteStartObject();
-                }
-
-                writer.WritePropertyName(property.PropertyName, false);
-
-                if (property.MemberConverter != null && property.MemberConverter.CanWrite)
-                {
-                    property.MemberConverter.WriteJson(writer, propertyValue, serializer);
-                }
-                else
-                {
-                    // writing a property via `serializer.Serialize` is slow, 
-                    // for certain well known primitive types we can write the 
-                    // value directly to the JsonWriter
-
-                    if (propertyValue is string s)
+                    if (!startedAttributeSection)
                     {
-                        writer.WriteValue(s);
+                        startedAttributeSection = true;
+                        writer.WritePropertyName(PropertyNames.Attributes);
+                        writer.WriteStartObject();
                     }
-                    else if (propertyValue is int i)
+                    writer.WritePropertyName(attributeProperty.PropertyName);
+                    if (attributeProperty.MemberConverter?.CanWrite == true)
                     {
-                        writer.WriteValue(i);
+                        attributeProperty.MemberConverter.WriteJson(writer, attributeValue, serializer);
+                    }
+                    else if (attributeValue is string attributeString)
+                    {
+                        writer.WriteValue(attributeString);
+                    }
+                    else if (attributeValue is bool attributeBool)
+                    {
+                        writer.WriteValue(attributeBool);
+                    }
+                    else if (attributeValue is int attributeInt)
+                    {
+                        writer.WriteValue(attributeValue);
                     }
                     else
                     {
-                        serializer.Serialize(writer, propertyValue);
+                        serializer.Serialize(writer, attributeValue);
                     }
                 }
             }
-
-            // if we did write attributes make sure to close out the attributes block
-            if (didWriteAttributes)
-            {
+            if(startedAttributeSection)
                 writer.WriteEndObject();
-            }
 
-            // output our relationships
-            if (relationships != null)
+            //serialize relationships
+            var startedRelationshipSection = false;
+            for (var i = 0; i < metadata.RelationshipTransformations.Length; i++)
             {
-                writer.WritePropertyName(PropertyNames.Relationships, false);
-                writer.WriteStartObject();
-                foreach (var relationship in relationships)
+                var relationshipProperty = metadata.RelationshipTransformations[i].Key;
+                var relationshipTransformation = metadata.RelationshipTransformations[i].Value;
+                if (ShouldWriteProperty(value, relationshipProperty, serializer, out object relationshipValue))
                 {
-                    writer.WritePropertyName(relationship.Key, false);
-
-                    serializer.Serialize(writer, relationship.Value);
+                    if (!startedRelationshipSection)
+                    {
+                        startedRelationshipSection = true;
+                        writer.WritePropertyName(PropertyNames.Relationships);
+                        writer.WriteStartObject();
+                    }
+                    writer.WritePropertyName(relationshipProperty.PropertyName);
+                    var relationshipObject = relationshipTransformation(relationshipValue);
+                    serializer.Serialize(writer, relationshipObject);
                 }
-                writer.WriteEndObject();
             }
-
+            if (startedRelationshipSection)
+                writer.WriteEndObject();
+            
             writer.WriteEndObject();
 
-            if (id == null)
-            {
-                return;
-            }
-
-            // add reference to this type, so others can reference it
-            var serializationData = SerializationData.GetSerializationData(writer);
-            var reference = new ResourceObjectReference(id, type);
-            serializationData.RenderedIncluded.Add(reference);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryParseAsRelationship(JsonContract contract, object value, out object relationshipObj)
-        {
-            switch (contract.Converter)
-            {
-                case ResourceObjectConverter _:
-                    relationshipObj = Relationship.Create(value);
-                    return true;
-
-                case ResourceObjectListConverter _:
-                    relationshipObj = Relationship.Create(value as IEnumerable<object>);
-                    return true;
-
-                case ResourceRelationshipConverter _:
-                    relationshipObj = value ?? contract.DefaultCreator();
-                    return true;
-
-                default:
-                    relationshipObj = null;
-                    return false;
+            //add reference to this type, so others can reference it
+            if (id != null) {
+                var serializationData = SerializationData.GetSerializationData(writer);
+                var reference = new ResourceObjectReference(id, type);
+                serializationData.RenderedIncluded.Add(reference);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteReferenceObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var contractResolver = serializer.ContractResolver;
+            var valueType = value.GetType();
 
-            if (!(contractResolver.ResolveContract(value.GetType()) is JsonObjectContract contract
-                && contract.Converter is ResourceObjectConverter))
-            {
-                throw new JsonApiFormatException(writer.Path,
-                    $"Expected to find to find resource object, but found '{value}'",
-                    "Resource identifier objects MUST contain 'id' members");
-            }
+            if (!(serializer.ContractResolver.ResolveContract(valueType) is ResourceObjectContract metadata))
+                throw new JsonApiFormatException(
+                      writer.Path,
+                      $"Expected to find to find resource object, but found '{value}'",
+                      "Resource indentifier objects MUST contain 'id' members");
 
             writer.WriteStartObject();
 
             //A "resource identifier object" MUST contain type and id members.
-            writer.WritePropertyName(PropertyNames.Id, false);
-            var idProp = contract.Properties.GetClosestMatchProperty(PropertyNames.Id);
-            var idVal = idProp?.ValueProvider?.GetValue(value) ?? string.Empty;
-            serializer.Serialize(writer, idVal);
-
-            writer.WritePropertyName(PropertyNames.Type, false);
-            var typeProp = contract.Properties.GetClosestMatchProperty(PropertyNames.Type);
-            var typeVal = typeProp?.ValueProvider?.GetValue(value) ?? GetDefaultTypeName(value.GetType());
-            serializer.Serialize(writer, typeVal);
+            //serialize id
+            ShouldWriteProperty(value, metadata.IdProperty, serializer, out string id);
+            writer.WritePropertyName(PropertyNames.Id);
+            writer.WriteValue(id);
+            
+            //serialize type. Will always out put a type
+            ShouldWriteProperty(value, metadata.TypeProperty, serializer, out string type);
+            type = type ?? metadata.DefaultType;
+            writer.WritePropertyName(PropertyNames.Type);
+            writer.WriteValue(type);
 
             //we will only write the object to included if there are properties that have have data
             //that we cant include within the reference
-            var willWriteObjectToIncluded = contract.Properties.Any(prop =>
+            var willWriteObjectToIncluded = false;
+            willWriteObjectToIncluded = ShouldWriteProperty(value, metadata.LinksProperty, serializer, out object _);
+            for(var i = 0; i < metadata.Attributes.Length && !willWriteObjectToIncluded; i++)
             {
-                //ignore id, type, meta and ignored properties
-                if (prop.PropertyName == PropertyNames.Id
-                    || prop.PropertyName == PropertyNames.Type
-                    || prop.PropertyName == PropertyNames.Meta
-                    || prop.Ignored)
-                    return false;
-
-                //ignore null properties
-                var propValue = prop.ValueProvider.GetValue(value);
-                return propValue != null || (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Include;
-            });
+                willWriteObjectToIncluded = ShouldWriteProperty(value, metadata.Attributes[i], serializer, out object _);
+            }
+            for (var i = 0; i < metadata.RelationshipTransformations.Length && !willWriteObjectToIncluded; i++)
+            {
+                willWriteObjectToIncluded = ShouldWriteProperty(value, metadata.RelationshipTransformations[i].Key, serializer, out object _);
+            }
 
             // typically we would just write the meta in the included. But if we are not going to
             // have something in included we will write the meta inline here
-            if (!willWriteObjectToIncluded)
+            if (!willWriteObjectToIncluded && ShouldWriteProperty(value, metadata.MetaProperty, serializer, out object metaVal))
             {
-                var metaProp = contract.Properties.GetClosestMatchProperty(PropertyNames.Meta);
-                var metaVal = metaProp?.ValueProvider?.GetValue(value);
-                if (metaVal != null)
-                {
-                    writer.WritePropertyName(PropertyNames.Meta, false);
-                    serializer.Serialize(writer, metaVal);
-                }
+                writer.WritePropertyName(PropertyNames.Meta);
+                serializer.Serialize(writer, metaVal);
             }
 
             writer.WriteEndObject();
@@ -428,15 +323,9 @@ namespace JsonApiSerializer.JsonConverters
             if (willWriteObjectToIncluded)
             {
                 var serializationData = SerializationData.GetSerializationData(writer);
-                var reference = new ResourceObjectReference(idVal.ToString(), typeVal.ToString());
+                var reference = new ResourceObjectReference(id, type);
                 serializationData.Included[reference] = value;
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private string GetDefaultTypeName(Type type)
-        {
-            return typeNames.GetOrAdd(type, GenerateDefaultTypeName);
         }
 
         /// <summary>
@@ -447,6 +336,11 @@ namespace JsonApiSerializer.JsonConverters
         protected virtual string GenerateDefaultTypeName(Type type)
         {
             return type.Name.ToLowerInvariant();
+        }
+
+        internal virtual string GenerateDefaultTypeNameInternal(Type type)
+        {
+            return GenerateDefaultTypeName(type);
         }
 
         /// <summary>
@@ -472,6 +366,18 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             return contract.DefaultCreator();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool ShouldWriteProperty<T>(object value, JsonProperty prop, JsonSerializer serializer, out T propValue)
+        {
+            if (prop == null)
+            {
+                propValue = default(T);
+                return false;
+            }
+            propValue = (T)prop.ValueProvider.GetValue(value);
+            return propValue != null || (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Include;
         }
     }
 }

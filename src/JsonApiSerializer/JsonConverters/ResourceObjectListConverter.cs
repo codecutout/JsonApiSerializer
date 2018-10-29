@@ -1,10 +1,12 @@
-﻿using JsonApiSerializer.Exceptions;
+﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.Exceptions;
+using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JsonApiSerializer.JsonApi.WellKnown;
+using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
@@ -17,23 +19,27 @@ namespace JsonApiSerializer.JsonConverters
             ResourceObjectConverter = resourceObjectConverter;
         }
 
-        public override bool CanConvert(Type objectType)
+        public static bool CanConvertStatic(Type objectType, JsonConverter elementConvertor)
         {
-            return ListUtil.IsList(objectType, out var elementType) && ResourceObjectConverter.CanConvert(elementType);
+            return ListUtil.IsList(objectType, out Type elementType) 
+                && elementConvertor.CanConvert(elementType);
         }
 
+        public override bool CanConvert(Type objectType)
+        {
+            return CanConvertStatic(objectType, ResourceObjectConverter);
+        }
+        
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            object list;
-            if (DocumentRootConverter.TryResolveAsRootData(reader, objectType, serializer, out list))
+            if (DocumentRootConverter.TryResolveAsRootData(reader, objectType, serializer, out object list))
                 return list;
 
             //read into the 'Data' path
             var preDataPath = ReaderUtil.ReadUntilEndsWith(reader, PropertyNames.Data);
 
             //we should be dealing with list types, but we also want the element type
-            Type elementType;
-            if (!ListUtil.IsList(objectType, out elementType))
+            if (!ListUtil.IsList(objectType, out Type elementType))
                 throw new ArgumentException($"{typeof(ResourceObjectListConverter)} can only read json lists", nameof(objectType));
 
             var itemsIterator = ReaderUtil.IterateList(reader).Select(x => serializer.Deserialize(reader, elementType));
@@ -55,7 +61,7 @@ namespace JsonApiSerializer.JsonConverters
             writer.WriteStartArray();
             foreach (var valueElement in enumerable)
             {
-                if (valueElement == null || !(contractResolver.ResolveContract(valueElement.GetType()).Converter is ResourceObjectConverter))
+                if (valueElement == null || !(contractResolver.ResolveContract(valueElement.GetType()) is ResourceObjectContract))
                     throw new JsonApiFormatException(writer.Path,
                         $"Expected to find to find resource objects within lists, but found '{valueElement}'",
                         "Resource identifier objects MUST contain 'id' members");

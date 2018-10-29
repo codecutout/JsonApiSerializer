@@ -52,5 +52,14 @@ namespace JsonApiSerializer.ContractResolvers
 
             return base.ResolveContractConverter(objectType);
         }
+
+        protected override JsonObjectContract CreateObjectContract(Type objectType)
+        {
+            var contract = base.CreateObjectContract(objectType);
+            if (ResourceObjectConverter.CanConvert(objectType))
+                contract = new ResourceObjectContract(contract);
+            return contract;
+        }
+
     }
 }

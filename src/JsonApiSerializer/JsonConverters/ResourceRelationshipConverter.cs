@@ -4,18 +4,25 @@ using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
     internal class ResourceRelationshipConverter : JsonConverter
     {
-        public override bool CanConvert(Type objectType)
+        public static bool CanConvertStatic(Type objectType)
         {
             var typeInfo = objectType.GetTypeInfo();
             return TypeInfoShim.GetPropertyFromInhertianceChain(typeInfo, PropertyNames.Data) != null
                 || TypeInfoShim.GetPropertyFromInhertianceChain(typeInfo, PropertyNames.Links) != null;
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            return CanConvertStatic(objectType);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -25,15 +32,20 @@ namespace JsonApiSerializer.JsonConverters
             var valueType = value.GetType();
             var contractResolver = (JsonApiContractResolver)serializer.ContractResolver;
             var contract = (JsonObjectContract)contractResolver.ResolveContract(valueType);
-            foreach (var prop in contract.Properties.Where(x => !x.Ignored))
+
+            for (var i=0; i < contract.Properties.Count;i++)
             {
+                var prop = contract.Properties[i];
+                if (prop.Ignored)
+                    continue;
+
                 var propValue = prop.ValueProvider.GetValue(value);
                 if (propValue == null && (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
                     continue;
                 var propType = propValue?.GetType() ?? prop.PropertyType;
                 switch (prop.PropertyName)
                 {
-                    case PropertyNames.Data when ListUtil.IsList(propType, out var elementType):
+                    case PropertyNames.Data when contractResolver.ResolveContract(propType) is JsonArrayContract:
                         writer.WritePropertyName(prop.PropertyName);
                         if (propValue == null)
                         {
