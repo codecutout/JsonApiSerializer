@@ -58,7 +58,7 @@ namespace JsonApiSerializer.JsonConverters
 
                         //if our object has an included property we will do our best to populate it
                         var property = contract.Properties.GetClosestMatchProperty(propName);
-                        if(ReaderUtil.CanPopulateProperty(property))
+                        if (ReaderUtil.CanPopulateProperty(property))
                         {
                             ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), ((ForkableJsonReader)reader).Fork());
                         }
@@ -68,7 +68,7 @@ namespace JsonApiSerializer.JsonConverters
                         {
                             includedConverter.ReadJson(reader, typeof(object), null, serializer);
                         }
-                       
+
                         break;
                     default:
                         ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), reader);
@@ -138,11 +138,10 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
 
-
             //A document MUST contain one of the following (data, errors, meta)
             //so if we do not have one of them we will output a null data
             if (!propertiesOutput.Contains(PropertyNames.Data)
-                && !propertiesOutput.Contains(PropertyNames.Errors) 
+                && !propertiesOutput.Contains(PropertyNames.Errors)
                 && !propertiesOutput.Contains(PropertyNames.Meta))
             {
                 propertiesOutput.Add(PropertyNames.Data);
@@ -241,7 +240,7 @@ namespace JsonApiSerializer.JsonConverters
         {
             var serializationData = SerializationData.GetSerializationData(reader);
 
-            //if we already have a root object then we dont need to resolve the root object
+            //if we already have a root object then we don't need to resolve the root object
             if (serializationData.HasProcessedDocumentRoot)
             {
                 obj = null;
@@ -263,7 +262,7 @@ namespace JsonApiSerializer.JsonConverters
         {
             var serializationData = SerializationData.GetSerializationData(writer);
 
-            //if we already have a root object then we dont need to resolve the root object
+            //if we already have a root object then we don't need to resolve the root object
             if (serializationData.HasProcessedDocumentRoot)
             {
                 return false;
@@ -290,7 +289,5 @@ namespace JsonApiSerializer.JsonConverters
             [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public IEnumerable<TError> Errors { get; set; }
         }
-
     }
-
 }

@@ -4,10 +4,8 @@ using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
@@ -19,8 +17,6 @@ namespace JsonApiSerializer.JsonConverters
             return TypeInfoShim.GetPropertyFromInhertianceChain(typeInfo, PropertyNames.Data) != null
                 || TypeInfoShim.GetPropertyFromInhertianceChain(typeInfo, PropertyNames.Links) != null;
         }
-
-        
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
@@ -50,7 +46,7 @@ namespace JsonApiSerializer.JsonConverters
                         break;
                     case PropertyNames.Data:
                         writer.WritePropertyName(prop.PropertyName);
-                        if(propValue == null)
+                        if (propValue == null)
                         {
                             writer.WriteNull();
                             break;

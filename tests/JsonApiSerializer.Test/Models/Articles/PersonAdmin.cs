@@ -1,6 +1,4 @@
-﻿using JsonApiSerializer.Test.Models.Articles;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace JsonApiSerializer.Test.Models.Articles
 {
