@@ -33,8 +33,9 @@ namespace JsonApiSerializer.JsonConverters
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             //we may be starting the deserialization here, if thats the case we need to resolve this object as the root
-            if (DocumentRootConverter.TryResolveAsRootData(reader, objectType, serializer, out object obj))
-                return obj;
+            var serializationData = SerializationData.GetSerializationData(reader);
+            if (!serializationData.HasProcessedDocumentRoot)
+                return DocumentRootConverter.ResolveAsRootData(reader, objectType, serializer);
 
             //read into the 'Data' element
             return ReaderUtil.ReadInto(
@@ -50,8 +51,6 @@ namespace JsonApiSerializer.JsonConverters
                 //if the value has been explicitly set to null then the value of the element is simply null
                 if (dataReader.TokenType == JsonToken.Null)
                     return null;
-
-                var serializationData = SerializationData.GetSerializationData(dataReader);
 
                 //if we arent given an existing value check the references to see if we have one in there
                 //if we dont have one there then create a new object to populate
@@ -127,8 +126,13 @@ namespace JsonApiSerializer.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (DocumentRootConverter.TryResolveAsRootData(writer, value, serializer))
+            var serializationData = SerializationData.GetSerializationData(writer);
+            if (!serializationData.HasProcessedDocumentRoot)
+            {
+                //treat this value as a document root
+                DocumentRootConverter.ResolveAsRootData(writer, value, serializer);
                 return;
+            }
 
             // if they have custom convertors registered, we will respect them
             for (var index = 0; index < serializer.Converters.Count; index++)
@@ -142,20 +146,23 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
 
-            const string relationshipsKey = PropertyNames.Relationships + ".";
-            const string dataKey = "." + PropertyNames.Data;
-
-            var writerPath = writer.Path;
-
-            var relationshipsIndex = writerPath.IndexOf(relationshipsKey, StringComparison.Ordinal);
-
-            if (relationshipsIndex > 0 && writerPath.IndexOf(dataKey, relationshipsIndex + relationshipsKey.Length, StringComparison.Ordinal) > 0)
+            // if we are already processing a resource object write out a reference,
+            // otherwise write out the full object
+            if (serializationData.ResourceObjectStack.Count > 0)
             {
                 WriteReferenceObjectJson(writer, value, serializer);
             }
             else
             {
-                WriteFullObjectJson(writer, value, serializer);
+                serializationData.ResourceObjectStack.Push(value);
+                try
+                {
+                    WriteFullObjectJson(writer, value, serializer);
+                }
+                finally
+                {
+                    serializationData.ResourceObjectStack.Pop();
+                }
             }
         }
 

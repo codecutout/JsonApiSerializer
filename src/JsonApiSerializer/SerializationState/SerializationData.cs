@@ -38,5 +38,10 @@ namespace JsonApiSerializer.SerializationState
         /// List to keep track of which includes we have already outputted the full object serialization
         /// </summary>
         public HashSet<ResourceObjectReference> RenderedIncluded = new HashSet<ResourceObjectReference>();
+
+        /// <summary>
+        /// The stack of resource objects that are being rendered
+        /// </summary>
+        public Stack<object> ResourceObjectStack = new Stack<object>();
     }
 }

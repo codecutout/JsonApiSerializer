@@ -1,6 +1,7 @@
 ﻿using JsonApiSerializer.ContractResolvers;
 using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi.WellKnown;
+using JsonApiSerializer.SerializationState;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using System;
@@ -32,8 +33,9 @@ namespace JsonApiSerializer.JsonConverters
         
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            if (DocumentRootConverter.TryResolveAsRootData(reader, objectType, serializer, out object list))
-                return list;
+            var serializationData = SerializationData.GetSerializationData(reader);
+            if (!serializationData.HasProcessedDocumentRoot)
+                return DocumentRootConverter.ResolveAsRootData(reader, objectType, serializer);
 
             //read into the 'Data' path
             var preDataPath = ReaderUtil.ReadUntilEndsWith(reader, PropertyNames.Data);
@@ -43,7 +45,7 @@ namespace JsonApiSerializer.JsonConverters
                 throw new ArgumentException($"{typeof(ResourceObjectListConverter)} can only read json lists", nameof(objectType));
 
             var itemsIterator = ReaderUtil.IterateList(reader).Select(x => serializer.Deserialize(reader, elementType));
-            list = ListUtil.CreateList(objectType, itemsIterator);
+            var list = ListUtil.CreateList(objectType, itemsIterator);
 
             //read out of the 'Data' path
             ReaderUtil.ReadUntilEnd(reader, preDataPath);
@@ -53,10 +55,16 @@ namespace JsonApiSerializer.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (DocumentRootConverter.TryResolveAsRootData(writer, value, serializer))
+            var serializationData = SerializationData.GetSerializationData(writer);
+            if (!serializationData.HasProcessedDocumentRoot)
+            {
+                //treat this value as a document root
+                DocumentRootConverter.ResolveAsRootData(writer, value, serializer);
                 return;
+            }
 
             var contractResolver = serializer.ContractResolver;
+
             var enumerable = value as IEnumerable<object> ?? Enumerable.Empty<object>();
             writer.WriteStartArray();
             foreach (var valueElement in enumerable)
