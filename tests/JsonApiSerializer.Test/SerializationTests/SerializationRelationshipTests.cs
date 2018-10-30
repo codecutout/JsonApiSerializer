@@ -691,5 +691,43 @@ namespace JsonApiSerializer.Test.SerializationTests
             Assert.Equal(stringWriter1.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
             Assert.Equal(stringWriter2.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
         }
+
+        [Fact]
+        public void When_serializing_explicit_relationship_array()
+        {
+            var root = new
+            {
+                type = "things",
+                Id = "1234",
+                Title = "thing",
+                Related = new[]
+                {
+                    Relationship.Create(new {id = "1234", type = "zomg"})
+                }
+            };
+
+            var json = JsonConvert.SerializeObject(root, settings);
+
+            var expectedjson = @"
+                {
+                  ""data"": {
+                    ""type"": ""things"",
+                    ""id"": ""1234"",
+                    ""attributes"": {
+                        ""title"": ""thing"",
+                    },
+                    ""relationships"": {
+                        ""related"": {
+                            ""data"": [{
+                                ""id"": ""1234"",
+                                ""type"": ""zomg""
+                            }]
+                        }
+                    }
+                  }
+                }";
+
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
     }
 }
