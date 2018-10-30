@@ -1,5 +1,4 @@
 ﻿using JsonApiSerializer.JsonApi;
-using System.Collections.Generic;
 
 namespace JsonApiSerializer.Test.Models.Articles
 {

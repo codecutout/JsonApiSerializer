@@ -1,4 +1,5 @@
 ﻿using JsonApiSerializer.JsonApi.WellKnown;
+using JsonApiSerializer.SerializationState;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -24,9 +25,10 @@ namespace JsonApiSerializer.JsonConverters
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             //we may be starting the deserialization here, if thats the case we need to resolve this object as the root
-            IEnumerable<IError> errors;
-            if (DocumentRootConverter.TryResolveAsRootError(reader, objectType, serializer, out errors))
+            var serializationData = SerializationData.GetSerializationData(reader);
+            if (!serializationData.HasProcessedDocumentRoot)
             {
+                var errors = DocumentRootConverter.ResolveAsRootError(reader, objectType, serializer);
                 //not sure if this is the correct thing to do. We are deserializing a single
                 //error but json:api always gives us a list of errors. We just return the first
                 //error
@@ -44,8 +46,10 @@ namespace JsonApiSerializer.JsonConverters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (DocumentRootConverter.TryResolveAsRootError(writer, value, serializer))
+            var serializationData = SerializationData.GetSerializationData(writer);
+            if (!serializationData.HasProcessedDocumentRoot)
             {
+                DocumentRootConverter.ResolveAsRootError(writer, value, serializer);
                 return;
             }
 

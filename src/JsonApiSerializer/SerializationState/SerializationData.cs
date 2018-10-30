@@ -1,8 +1,8 @@
 ﻿using JsonApiSerializer.Util;
-using JsonApiSerializer.Util.JsonApiConverter.Util;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using JsonApiSerializer.Util.JsonApiConverter.Util;
 
 namespace JsonApiSerializer.SerializationState
 {
@@ -30,7 +30,7 @@ namespace JsonApiSerializer.SerializationState
         public bool HasProcessedDocumentRoot { get; set; }
 
         /// <summary>
-        /// List of all the included items keyd by their reference
+        /// List of all the included items keyed by their reference
         /// </summary>
         public OrderedDictionary<ResourceObjectReference, object> Included { get; } = new OrderedDictionary<ResourceObjectReference, object>();
 
@@ -39,7 +39,9 @@ namespace JsonApiSerializer.SerializationState
         /// </summary>
         public HashSet<ResourceObjectReference> RenderedIncluded = new HashSet<ResourceObjectReference>();
 
-
-
+        /// <summary>
+        /// The stack of resource objects that are being rendered
+        /// </summary>
+        public Stack<object> ResourceObjectStack = new Stack<object>();
     }
 }

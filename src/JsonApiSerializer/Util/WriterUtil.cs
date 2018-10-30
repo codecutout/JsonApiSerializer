@@ -1,6 +1,4 @@
-﻿using JsonApiSerializer.ContractResolvers;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+﻿using Newtonsoft.Json;
 using System;
 using System.Text.RegularExpressions;
 
@@ -22,16 +20,5 @@ namespace JsonApiSerializer.Util
                 writer.WriteEndObject();
             }
         }
-
-        internal static void SerializeValueWithMemberConvertor(JsonSerializer serializer, JsonWriter writer, JsonProperty property, object propValue)
-        {
-            if (property.MemberConverter != null && property.MemberConverter.CanWrite)
-            {
-                property.MemberConverter.WriteJson(writer, propValue, serializer);
-                return;
-            }
-
-            serializer.Serialize(writer, propValue);
-        }
-    }   
+    }
 }

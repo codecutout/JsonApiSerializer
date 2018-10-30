@@ -32,7 +32,7 @@ namespace JsonApiSerializer.Util
                             "The value of 'id' MUST be a string");
                     id = (string)lookAheadReader.Value;
                 }
-                    
+
                 else if (propName == PropertyNames.Type)
                 {
                     if (lookAheadReader.TokenType != JsonToken.String)
@@ -41,7 +41,7 @@ namespace JsonApiSerializer.Util
                             "The value of 'type' MUST be a string");
                     type = (string)lookAheadReader.Value;
                 }
-                    
+
                 //we have the data we need no point continuing to read the reader
                 if (id != null && type != null)
                     break;
@@ -58,17 +58,17 @@ namespace JsonApiSerializer.Util
         /// <exception cref="JsonApiFormatException">When reader is not at the start of an object</exception>
         public static IEnumerable<string> IterateProperties(JsonReader reader)
         {
-            
+
             if (reader.TokenType == JsonToken.Null)
                 yield break;
             if (reader.TokenType != JsonToken.StartObject)
             {
-                var path = reader is ForkableJsonReader forkreader 
-                    ? forkreader.FullPath 
+                var path = reader is ForkableJsonReader forkreader
+                    ? forkreader.FullPath
                     : reader.Path;
 
                 var propName = path.Split('.').LastOrDefault();
-                if(new[] { "relationships", "attributes" }.Contains(propName))
+                if (new[] { "relationships", "attributes" }.Contains(propName))
                 {
                     //we are an object that the json:api spec says is mandatory to be an object
                     throw new JsonApiFormatException(path,
@@ -86,7 +86,6 @@ namespace JsonApiSerializer.Util
                     throw new JsonApiFormatException(path,
                      $"Expected to find json object at path '{path}' but found '{reader.Value}'");
                 }
-              
             }
 
             reader.Read();
@@ -224,6 +223,34 @@ namespace JsonApiSerializer.Util
             } while (reader.Read());
 
             throw new JsonApiFormatException(startPath, $"Expected to find nested object matching path \\{pathRegex}\\");
+        }
+
+        public static string ReadUntilEndsWith(JsonReader reader, string pathEndsWith)
+        {
+            var startPath = reader.Path;
+
+            do
+            {
+                switch (reader.TokenType)
+                {
+                    case JsonToken.StartObject:
+                    case JsonToken.StartArray:
+                    case JsonToken.Null:
+                        if (reader.Path.EndsWith(pathEndsWith))
+                            return startPath;
+                        break;
+                    case JsonToken.EndObject:
+                    case JsonToken.EndArray:
+                        if (reader.Path == startPath)
+                            throw new JsonApiFormatException(startPath, $"Expected to find nested object within {startPath} that matches \\{pathEndsWith}\\");
+                        break;
+                    default:
+                        break;
+
+                }
+            } while (reader.Read());
+
+            throw new JsonApiFormatException(startPath, $"Expected to find nested object matching path \\{pathEndsWith}\\");
         }
 
         /// <summary>
