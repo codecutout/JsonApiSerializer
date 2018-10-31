@@ -79,7 +79,7 @@ namespace JsonApiSerializer.ContractResolvers
                     case PropertyNames.Type:
                         TypeProperty = prop;
                         break;
-                    case var _ when TryCreateRelationshipFactory(jsonObjectContract, prop, out var relationshipTranformation):
+                    case var _ when TryCreateRelationshipFactory(jsonObjectContract, prop.PropertyType, out var relationshipTranformation):
                         relationshipTransformations.Add(new KeyValuePair<JsonProperty, Func<object, object>>(prop, relationshipTranformation));
                         break;
                     default:
@@ -92,9 +92,8 @@ namespace JsonApiSerializer.ContractResolvers
             this.RelationshipTransformations = relationshipTransformations.ToArray();
         }
 
-        private static bool TryCreateRelationshipFactory(JsonObjectContract contract, JsonProperty property, out Func<object, object> relationshipFactory)
+        public static bool TryCreateRelationshipFactory(JsonObjectContract contract, Type propType, out Func<object, object> relationshipFactory)
         {
-            var propType = property.PropertyType;
             if (contract.Converter.CanConvert(propType))
             {
                 //it is a direct link to a resoruce object
