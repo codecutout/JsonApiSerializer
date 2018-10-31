@@ -4,6 +4,7 @@ using JsonApiSerializer.Test.Models.Articles;
 using JsonApiSerializer.Test.Models.Locations;
 using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Xunit;
@@ -690,6 +691,69 @@ namespace JsonApiSerializer.Test.SerializationTests
             }";
             Assert.Equal(stringWriter1.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
             Assert.Equal(stringWriter2.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
+        public void When_relationship_not_identifable_from_property_type_should_serialize_as_relationship()
+        {
+            var article = new
+            {
+                id = "1234",
+                Title = "My Article",
+                type = "articles",
+                author = (object)new //declared object but actaul type is relationship
+                {
+                    Id = "333",
+                    type = "people",
+                    FirstName = "John",
+                    LastName = "Smith",
+                    Twitter = "jsmi"
+                },
+                timestamps = (object)new //declared object but actaul type is attribute
+                {
+                    published = new DateTime(2018, 10, 28),
+                    edited = new DateTime(2018, 10, 31),
+                }
+            };
+            var root = DocumentRoot.Create((object)article);
+
+            var json = JsonConvert.SerializeObject(root, settings);
+
+            var expectedjson = @"{
+                ""data"": {
+                    ""id"": ""1234"",
+                    ""type"": ""articles"",
+                    ""attributes"": {
+                        ""title"": ""My Article"",
+                        ""timestamps"": {
+                            ""published"": ""2018-10-28T00:00:00"",
+                            ""edited"": ""2018-10-31T00:00:00""
+                        }
+                    },
+                    ""relationships"": {
+                        ""author"": {
+                            ""data"": { 
+                                ""id"":""333"", 
+                                ""type"":""people""
+                            }
+                        }
+                    }
+                },
+                ""included"" : [
+                    {
+                        ""id"": ""333"",
+                        ""type"": ""people"",
+                        ""attributes"":{
+                            ""firstName"": ""John"",
+                            ""lastName"": ""Smith"",
+                            ""twitter"": ""jsmi""
+                        }
+
+                    }
+                ]
+            }";
+
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
         }
     }
 }

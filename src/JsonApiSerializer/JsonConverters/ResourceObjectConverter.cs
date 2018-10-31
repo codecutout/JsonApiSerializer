@@ -207,6 +207,10 @@ namespace JsonApiSerializer.JsonConverters
                 serializer.Serialize(writer, meta);
             }
 
+            // store all the relationships, that appear to be attributes from the 
+            // property declared type, types but the runtime type shows they are
+            // actaully relationships
+            List<KeyValuePair<JsonProperty, object>> undeclaredRelationships = null;
 
             //serialize attributes
             var startedAttributeSection = false;
@@ -215,6 +219,21 @@ namespace JsonApiSerializer.JsonConverters
                 var attributeProperty = metadata.Attributes[i];
                 if (ShouldWriteProperty(value, attributeProperty, serializer, out object attributeValue))
                 {
+                    // some relationships are not decalred as such. They exist in properties
+                    // with declared types of `object` but the runtime object within is a
+                    // relationship. We will check here if this attribute property is really
+                    // a relationship, and if it is store it to process later
+                    var attributeValueType = attributeValue?.GetType();
+                    if (attributeValueType != null
+                        && attributeProperty.PropertyType != attributeValueType 
+                        && ResourceObjectContract.TryCreateRelationshipFactory(metadata, attributeValueType, out var relationshipFactory))
+                    {
+                        undeclaredRelationships = undeclaredRelationships ?? new List<KeyValuePair<JsonProperty, object>>();
+                        undeclaredRelationships.Add(new KeyValuePair<JsonProperty, object>(attributeProperty, relationshipFactory(attributeValue)));
+                        continue;
+                    }
+
+                    //serialize out the attribute
                     if (!startedAttributeSection)
                     {
                         startedAttributeSection = true;
@@ -249,6 +268,23 @@ namespace JsonApiSerializer.JsonConverters
 
             //serialize relationships
             var startedRelationshipSection = false;
+
+            //first go through our relationships that were originally declared as attributes
+            for(var i = 0; undeclaredRelationships != null && i < undeclaredRelationships.Count; i++)
+            {
+                var relationshipProperty = undeclaredRelationships[i].Key;
+                var relationshipObject = undeclaredRelationships[i].Value;
+                if (!startedRelationshipSection)
+                {
+                    startedRelationshipSection = true;
+                    writer.WritePropertyName(PropertyNames.Relationships);
+                    writer.WriteStartObject();
+                }
+                writer.WritePropertyName(relationshipProperty.PropertyName);
+                serializer.Serialize(writer, relationshipObject);
+            }
+
+            //then go through the ones we know to be relationships
             for (var i = 0; i < metadata.RelationshipTransformations.Length; i++)
             {
                 var relationshipProperty = metadata.RelationshipTransformations[i].Key;
