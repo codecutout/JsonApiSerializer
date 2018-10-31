@@ -691,5 +691,59 @@ namespace JsonApiSerializer.Test.SerializationTests
             Assert.Equal(stringWriter1.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
             Assert.Equal(stringWriter2.ToString(), expectedjson, JsonStringEqualityComparer.Instance);
         }
+
+        [Fact]
+        public void When()
+        {
+            var article = new
+            {
+                id = "1234",
+                Title = "My Article",
+                type = "articles",
+                author = (object)new
+                {
+                    Id = "333",
+                    type = "people",
+                    FirstName = "John",
+                    LastName = "Smith",
+                    Twitter = "jsmi"
+                }
+            };
+            var root = DocumentRoot.Create((object)article);
+
+            var json = JsonConvert.SerializeObject(root, settings);
+
+            var expectedjson = @"{
+                ""data"": {
+                    ""id"": ""1234"",
+                    ""type"": ""articles"",
+                    ""attributes"": {
+                        ""title"": ""My Article""
+                    },
+                    ""relationships"": {
+                        ""author"": {
+                            ""data"": { 
+                                ""id"":""333"", 
+                                ""type"":""people""
+                            }
+                        }
+                    }
+                },
+                ""included"" : [
+                    {
+                        ""id"": ""333"",
+                        ""type"": ""people"",
+                        ""attributes"":{
+                            ""firstName"": ""John"",
+                            ""lastName"": ""Smith"",
+                            ""twitter"": ""jsmi""
+                        }
+
+                    }
+                ]
+            }";
+
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
     }
 }
