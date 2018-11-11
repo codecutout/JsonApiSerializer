@@ -75,6 +75,13 @@ namespace JsonApiSerializer.JsonConverters
                         break;
                 }
             }
+
+            for(var i=0; i< serializationData.PostProcessingActions.Count;i++)
+            {
+                serializationData.PostProcessingActions[i]();
+            }
+            serializationData.PostProcessingActions.Clear();
+
             return rootObject;
         }
 
@@ -178,6 +185,12 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             writer.WriteEndObject();
+
+            for (var i = 0; i < serializationData.PostProcessingActions.Count; i++)
+            {
+                serializationData.PostProcessingActions[i]();
+            }
+            serializationData.PostProcessingActions.Clear();
         }
 
         internal static IEnumerable<IError> ResolveAsRootError(JsonReader reader, Type objectType, JsonSerializer serializer)

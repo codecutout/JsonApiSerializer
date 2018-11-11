@@ -1,4 +1,7 @@
 ﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.ContractResolvers.Contracts;
+using JsonApiSerializer.Exceptions;
+using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
@@ -13,75 +16,185 @@ namespace JsonApiSerializer.JsonConverters
 {
     internal class ResourceRelationshipConverter : JsonConverter
     {
-        public static bool CanConvertStatic(Type objectType)
+        private readonly Func<Type, bool> isResourceIdentifier;
+
+        public ResourceRelationshipConverter(Func<Type, bool> isResourceIdentifier)
+        {
+            this.isResourceIdentifier = isResourceIdentifier;
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            return IsExplicitRelationship(objectType)
+                || isResourceIdentifier(objectType);
+        }
+
+        internal bool IsExplicitRelationship(Type objectType)
         {
             var typeInfo = objectType.GetTypeInfo();
             return TypeInfoShim.GetPropertyFromInhertianceChain(typeInfo, PropertyNames.Data) != null
                 || TypeInfoShim.GetPropertyFromInhertianceChain(typeInfo, PropertyNames.Links) != null;
         }
 
-        public override bool CanConvert(Type objectType)
-        {
-            return CanConvertStatic(objectType);
-        }
-
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            writer.WriteStartObject();
+            var jsonApiContractResolver = (JsonApiContractResolver)serializer.ContractResolver;
 
-            var valueType = value.GetType();
-            var contractResolver = (JsonApiContractResolver)serializer.ContractResolver;
-            var contract = (JsonObjectContract)contractResolver.ResolveContract(valueType);
+            var type = value.GetType();
+            var contract = jsonApiContractResolver.ResolveContract(type);
 
-            for (var i=0; i < contract.Properties.Count;i++)
+            //if we are not an explicit relationship then just write
+            //the value out in a data field
+            if(!(contract is ResourceRelationshipContract rrc))
             {
-                var prop = contract.Properties[i];
-                if (prop.Ignored)
-                    continue;
+                //assume the relationship object is implied so will just write a data field
+                writer.WriteStartObject();
 
-                var propValue = prop.ValueProvider.GetValue(value);
-                if (propValue == null && (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Ignore)
-                    continue;
-                var propType = propValue?.GetType() ?? prop.PropertyType;
-                switch (prop.PropertyName)
+                writer.WritePropertyName(PropertyNames.Data);
+                jsonApiContractResolver.ResourceIdentifierConverter.WriteJson(writer, value, serializer);
+
+                writer.WriteEndObject();
+                return;
+            }
+
+           
+            writer.WriteStartObject();
+            var hasMandatoryField = false;
+            for (var i = 0; i < rrc.Properties.Count; i++)
+            {
+                var relationshipProp = rrc.Properties[i];
+                if (WriterUtil.ShouldWriteProperty(value, relationshipProp, serializer, out object propValue))
                 {
-                    case PropertyNames.Data when contractResolver.ResolveContract(propType) is JsonArrayContract:
-                        writer.WritePropertyName(prop.PropertyName);
-                        if (propValue == null)
-                        {
-                            //Resource linkage MUST be represented by an empty array ([]) for empty to-many relationships
-                            writer.WriteStartArray();
-                            writer.WriteEndArray();
+                    writer.WritePropertyName(relationshipProp.PropertyName);
+                    switch (relationshipProp.PropertyName)
+                    {
+                        case PropertyNames.Data:
+                            hasMandatoryField = true;
+                            if (propValue == null)
+                                WriteNullOrEmpty(writer, relationshipProp.PropertyType, serializer);
+                            else
+                                jsonApiContractResolver.ResourceIdentifierConverter.WriteJson(writer, propValue, serializer);
                             break;
-                        }
-                        contractResolver.ResourceObjectListConverter.WriteJson(writer, propValue, serializer);
-                        break;
-                    case PropertyNames.Data:
-                        writer.WritePropertyName(prop.PropertyName);
-                        if (propValue == null)
-                        {
-                            writer.WriteNull();
+                        case PropertyNames.Links:
+                        case PropertyNames.Meta:
+                            hasMandatoryField = true;
+                            serializer.Serialize(writer, propValue);
                             break;
-                        }
-
-                        //because we are in a relationship we want to force this list to be treated as a resource object
-                        contractResolver.ResourceObjectConverter.WriteJson(writer, propValue, serializer);
-                        break;
-                    default:
-                        writer.WritePropertyName(prop.PropertyName);
-                        serializer.Serialize(writer, propValue);
-                        break;
+                        default:
+                            serializer.Serialize(writer, propValue);
+                            break;
+                    }
                 }
             }
 
+            //A "relationship object" MUST contain at least one of the following links, data, meta
+            if (!hasMandatoryField)
+            {
+                writer.WritePropertyName(PropertyNames.Data);
+                WriteNullOrEmpty(writer, rrc.DataProperty.PropertyType, serializer);
+            }
+
+            
             writer.WriteEndObject();
+
         }
 
-        public override bool CanRead => false;
+        public void WriteNullableJson(JsonWriter writer, Type declaredType, object value, JsonSerializer serializer)
+        {
+            // WriteJson should NEVER be passed a null a value, 
+            // so we will handle nulls seperately here
+            if(value == null)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(PropertyNames.Data);
+                WriteNullOrEmpty(writer, declaredType, serializer);
+                writer.WriteEndObject();
+            }
+            else
+            {
+                WriteJson(writer, value, serializer);
+            }
+                
+        }
+
+        private void WriteNullOrEmpty(JsonWriter writer, Type declaredType, JsonSerializer serializer)
+        {
+            var contract = serializer.ContractResolver.ResolveContract(declaredType);
+
+            //if its a null relationship, we want to know what hte data field was
+            if (contract is ResourceRelationshipContract rrc)
+                contract = serializer.ContractResolver.ResolveContract(rrc.DataProperty.PropertyType);
+            
+            if (contract is JsonArrayContract)
+            {
+                writer.WriteStartArray();
+                writer.WriteEndArray();
+            }
+            else
+            {
+                writer.WriteNull();
+            }
+            
+        }
+
+        public override bool CanRead => true;
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            throw new NotSupportedException();
+            var jsonApiContractResolver = (JsonApiContractResolver)serializer.ContractResolver;
+            var contract = jsonApiContractResolver.ResolveContract(objectType);
+
+            if (!(contract is ResourceRelationshipContract rrc))
+            {
+                // read into the 'data' path
+                var preDataPath = ReaderUtil.ReadUntilEndsWith(reader, PropertyNames.Data);
+
+                // let the resource identifier deal with the rest
+                var identifier = jsonApiContractResolver.ResourceIdentifierConverter.ReadJson(
+                    reader, 
+                    objectType, 
+                    existingValue, 
+                    serializer);
+
+                // read out of the 'data' element
+                ReaderUtil.ReadUntilEnd(reader, preDataPath);
+
+                return identifier;
+            }
+
+
+            if (ReaderUtil.TryUseCustomConvertor(reader, objectType, existingValue, serializer, this, out object customConvertedValue))
+                return customConvertedValue;
+
+            // if the value has been explicitly set to null then the value of the element is simply null
+            if (reader.TokenType == JsonToken.Null)
+                return null;
+
+            //create a new relationship object and start populating the properties
+            var obj = rrc.DefaultCreator();
+            
+            foreach (var propName in ReaderUtil.IterateProperties(reader))
+            {
+                switch (propName)
+                {
+                    case PropertyNames.Data:
+                        ReaderUtil.TryPopulateProperty(
+                           serializer,
+                           obj,
+                           rrc.Properties.GetClosestMatchProperty(propName),
+                           reader,
+                           overrideConverter: jsonApiContractResolver.ResourceIdentifierConverter);
+                        break;
+                    default:
+                        ReaderUtil.TryPopulateProperty(
+                           serializer,
+                           obj,
+                           rrc.Properties.GetClosestMatchProperty(propName),
+                           reader);
+                        break;
+                }
+            }
+            return obj;
         }
     }
 }

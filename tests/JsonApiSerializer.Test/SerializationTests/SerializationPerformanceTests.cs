@@ -188,6 +188,7 @@ namespace JsonApiSerializer.Test.SerializationTests
                     LastName = person.LastName,
                     Twitter = person.Twitter
                 },
+                Meta = person.Meta,
             };
             PremappedPerson.Add(person, result);
             return result;

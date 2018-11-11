@@ -3,6 +3,9 @@ using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using JsonApiSerializer.JsonApi;
+using JsonApiSerializer.JsonConverters;
+using JsonApiSerializer.Test.Models.Articles;
 using Xunit;
 
 namespace JsonApiSerializer.Test.SerializationTests

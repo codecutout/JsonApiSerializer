@@ -1,5 +1,6 @@
 ﻿using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi.WellKnown;
+using JsonApiSerializer.JsonConverters;
 using JsonApiSerializer.SerializationState;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -129,18 +130,28 @@ namespace JsonApiSerializer.Util
         /// <param name="property"></param>
         /// <param name="value"></param>
         /// <returns><c>True</c> if the property could be set otherwise <c>false</c></returns>
-        public static bool TryPopulateProperty(JsonSerializer serializer, object obj, JsonProperty property, JsonReader value)
+        public static bool TryPopulateProperty(JsonSerializer serializer, object obj, JsonProperty property, JsonReader value, JsonConverter overrideConverter = null)
         {
             if (!CanPopulateProperty(property))
             {
                 return false;
             }
 
-            var valueObj = property.MemberConverter != null && property.MemberConverter.CanRead
-                ? property.MemberConverter.ReadJson(value, property.PropertyType, null, serializer)
-                : serializer.Deserialize(value, property.PropertyType);
+            object propValue;
+            if (overrideConverter != null)
+            {
+                propValue = overrideConverter.ReadJson(value, property.PropertyType, null, serializer);
+            }
+            else if (property.MemberConverter != null && property.MemberConverter.CanRead)
+            {
+                propValue = property.MemberConverter.ReadJson(value, property.PropertyType, null, serializer);
+            }
+            else
+            {
+                propValue = serializer.Deserialize(value, property.PropertyType);
+            }
 
-            property.ValueProvider.SetValue(obj, valueObj);
+            property.ValueProvider.SetValue(obj, propValue);
             return true;
         }
 
@@ -172,57 +183,6 @@ namespace JsonApiSerializer.Util
                 //are a value, we will return the items as though its a list with just that item
                 yield return reader.Value;
             }
-        }
-
-        /// <summary>
-        /// Reads into an element, performs the action then reads out of the element
-        /// </summary>
-        /// <typeparam name="TReader"></typeparam>
-        /// <typeparam name="TResult"></typeparam>
-        /// <param name="reader"></param>
-        /// <param name="pathRegex"></param>
-        /// <param name="action"></param>
-        /// <returns></returns>
-        public static TResult ReadInto<TReader, TResult>(TReader reader, Regex pathRegex, Func<TReader, TResult> action) where TReader : JsonReader
-        {
-            var startPath = ReadUntilStart(reader, pathRegex);
-            var result = action(reader);
-            ReadUntilEnd(reader, startPath);
-            return result;
-        }
-
-        /// <summary>
-        /// Reads until the path matches the regex
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="pathRegex"></param>
-        /// <returns></returns>
-        public static string ReadUntilStart(JsonReader reader, Regex pathRegex)
-        {
-            var startPath = reader.Path;
-
-            do
-            {
-                switch (reader.TokenType)
-                {
-                    case JsonToken.StartObject:
-                    case JsonToken.StartArray:
-                    case JsonToken.Null:
-                        if (pathRegex.IsMatch(reader.Path))
-                            return startPath;
-                        break;
-                    case JsonToken.EndObject:
-                    case JsonToken.EndArray:
-                        if (reader.Path == startPath)
-                            throw new JsonApiFormatException(startPath, $"Expected to find nested object within {startPath} that matches \\{pathRegex}\\");
-                        break;
-                    default:
-                        break;
-
-                }
-            } while (reader.Read());
-
-            throw new JsonApiFormatException(startPath, $"Expected to find nested object matching path \\{pathRegex}\\");
         }
 
         public static string ReadUntilEndsWith(JsonReader reader, string pathEndsWith)
@@ -280,6 +240,48 @@ namespace JsonApiSerializer.Util
             } while (reader.Read());
 
             throw new JsonApiFormatException(path, $"Unable to find closing element for item at path '{path}'");
+        }
+
+        public static bool TryUseCustomConvertor(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer, JsonConverter excludeConverter, out object value)
+        {
+            for (var index = 0; index < serializer.Converters.Count; index++)
+            {
+                var converter = serializer.Converters[index];
+
+                if (converter != excludeConverter && converter.CanRead && converter.CanConvert(objectType))
+                {
+                    value = converter.ReadJson(reader, objectType, existingValue, serializer);
+                    return true;
+                }
+            }
+            value = default(object);
+            return false;
+        }
+
+        public static object CreateObject(SerializationData serializationData, Type objectType, string jsonApiType, JsonSerializer serializer)
+        {
+            // Hack: To keep backward compatability we are not sure what resouceObjectConverter to use
+            // we need to check if either one was defined as a serializer, or if one was defined as
+            // furher up the stack (i.e. a member converter)
+
+            for (var i = 0; i < serializer.Converters.Count; i++)
+            {
+                var converter = serializer.Converters[i];
+                if (converter is ResourceObjectConverter roc && converter.CanRead && converter.CanConvert(objectType))
+                {
+                    return roc.CreateObjectInternal(objectType, jsonApiType, serializer);
+                }
+            }
+
+            foreach (var converter in serializationData.ConverterStack)
+            {
+                if (converter is ResourceObjectConverter roc)
+                {
+                    return roc.CreateObjectInternal(objectType, jsonApiType, serializer);
+                }
+            }
+
+            return serializer.ContractResolver.ResolveContract(objectType).DefaultCreator();
         }
     }
 }

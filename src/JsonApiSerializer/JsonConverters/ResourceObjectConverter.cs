@@ -1,4 +1,5 @@
 ﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.ContractResolvers.Contracts;
 using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonApi.WellKnown;
@@ -37,62 +38,39 @@ namespace JsonApiSerializer.JsonConverters
             if (!serializationData.HasProcessedDocumentRoot)
                 return DocumentRootConverter.ResolveAsRootData(reader, objectType, serializer);
 
-            //read into the 'Data' element
-            return ReaderUtil.ReadInto(
-                reader as ForkableJsonReader ?? new ForkableJsonReader(reader),
-                DataReadPathRegex,
-                dataReader =>
-            {
-                //if they have custom convertors registered, we will respect them
-                var customConvertor = serializer.Converters.FirstOrDefault(x => x.CanRead && x.CanConvert(objectType));
-                if (customConvertor != null && customConvertor != this)
-                    return customConvertor.ReadJson(reader, objectType, existingValue, serializer);
+            if (ReaderUtil.TryUseCustomConvertor(reader, objectType, existingValue, serializer, this, out object customConvertedValue))
+                return customConvertedValue;
 
-                //if the value has been explicitly set to null then the value of the element is simply null
-                if (dataReader.TokenType == JsonToken.Null)
-                    return null;
+            //if the value has been explicitly set to null then the value of the element is simply null
+            if (reader.TokenType == JsonToken.Null)
+                return null;
 
-                //if we arent given an existing value check the references to see if we have one in there
-                //if we dont have one there then create a new object to populate
-                if (existingValue == null)
-                {
-                    var reference = ReaderUtil.ReadAheadToIdentifyObject(dataReader);
+            serializationData.ConverterStack.Push(this);
 
-                    if (!serializationData.Included.TryGetValue(reference, out existingValue))
-                    {
-                        existingValue = CreateObject(objectType, reference.Type, serializer);
-                        serializationData.Included.Add(reference, existingValue);
-                    }
-                    if (existingValue is JObject existingValueJObject)
-                    {
-                        //sometimes the value in the reference resolver is a JObject. This occurs when we
-                        //did not know what type it should be when we first read it (i.e. included was processed
-                        //before the item). In these cases we will create a new object and read data from the JObject
-                        dataReader = new ForkableJsonReader(existingValueJObject.CreateReader(), dataReader.SerializationDataToken);
-                        dataReader.Read(); //JObject readers begin at Not Started
-                        existingValue = CreateObject(objectType, reference.Type, serializer);
-                        serializationData.Included[reference] = existingValue;
-                    }
-                }
+            var forkableReader = reader as ForkableJsonReader ?? new ForkableJsonReader(reader);
+            reader = forkableReader;
+            var contractResolver = (JsonApiContractResolver)serializer.ContractResolver;
 
-                //additional check to ensure the object we created is of the correct type
-                if (!TypeInfoShim.IsInstanceOf(objectType.GetTypeInfo(), existingValue))
-                    throw new JsonSerializationException($"Unable to assign object '{existingValue}' to type '{objectType}'");
+            var reference = ReaderUtil.ReadAheadToIdentifyObject(forkableReader);
 
-                PopulateProperties(serializer, existingValue, dataReader);
-                return existingValue;
-            });
-        }
+            //if we dont have this object already we will create it
+            existingValue = existingValue ?? CreateObject(objectType, reference.Type, serializer);
 
-        protected void PopulateProperties(JsonSerializer serializer, object obj, JsonReader reader)
-        {
-            JsonObjectContract contract = (JsonObjectContract)serializer.ContractResolver.ResolveContract(obj.GetType());
+
+            JsonContract rawContract = contractResolver.ResolveContract(existingValue.GetType());
+            if (!(rawContract is JsonObjectContract contract))
+                throw new JsonApiFormatException(
+                   forkableReader.FullPath,
+                   $"Expected created object to be a resource object, but found '{existingValue}'",
+                   "Resource indentifier objects MUST contain 'id' members");
+
+
 
             foreach (var propName in ReaderUtil.IterateProperties(reader))
             {
                 var successfullyPopulateProperty = ReaderUtil.TryPopulateProperty(
                     serializer,
-                    obj,
+                    existingValue,
                     contract.Properties.GetClosestMatchProperty(propName),
                     reader);
 
@@ -103,7 +81,7 @@ namespace JsonApiSerializer.JsonConverters
                     {
                         ReaderUtil.TryPopulateProperty(
                            serializer,
-                           obj,
+                           existingValue,
                            contract.Properties.GetClosestMatchProperty(innerPropName),
                            reader);
                     }
@@ -114,14 +92,39 @@ namespace JsonApiSerializer.JsonConverters
                 {
                     foreach (var innerPropName in ReaderUtil.IterateProperties(reader))
                     {
+                        var prop = contract.Properties.GetClosestMatchProperty(innerPropName);
+                        if (prop == null)
+                            continue;
+
+                        // This is a massive hack. MemberConverters used to work and allowed
+                        // modifying a members create object. Unfortunatly Resource Identifiers
+                        // are no longer created by this object converter. We are passing the
+                        // convertor via the serialization data so ResourceIdentifierConverter
+                        // can access it down the line.
+                        // next breaking change remove support for ResourceObjectConverter 
+                        // member converters
+                        if (prop.MemberConverter != null)
+                            serializationData.ConverterStack.Push(prop.MemberConverter);
+
                         ReaderUtil.TryPopulateProperty(
-                            serializer,
-                            obj,
-                            contract.Properties.GetClosestMatchProperty(innerPropName),
-                            reader);
+                          serializer,
+                          existingValue,
+                          contract.Properties.GetClosestMatchProperty(innerPropName),
+                          reader,
+                          overrideConverter: contractResolver.ResourceRelationshipConverter);
+
+                        if (prop.MemberConverter != null)
+                            serializationData.ConverterStack.Pop();
                     }
                 }
             }
+
+            //we have rendered this so we will tag it as included
+            serializationData.RenderedIncluded.Add(reference);
+            serializationData.Included[reference] = existingValue;
+
+            serializationData.ConverterStack.Pop();
+            return existingValue;
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -135,73 +138,44 @@ namespace JsonApiSerializer.JsonConverters
             }
 
             // if they have custom convertors registered, we will respect them
-            for (var index = 0; index < serializer.Converters.Count; index++)
-            {
-                var converter = serializer.Converters[index];
+            if (WriterUtil.TryUseCustomConvertor(writer, value, serializer, excludeConverter: this))
+                return;
 
-                if (converter.CanWrite && converter.CanConvert(value.GetType()))
-                {
-                    converter.WriteJson(writer, value, serializer);
-                    return;
-                }
-            }
-
-            // if we are already processing a resource object write out a reference,
-            // otherwise write out the full object
-            if (serializationData.ResourceObjectStack.Count > 0)
-            {
-                WriteReferenceObjectJson(writer, value, serializer);
-            }
-            else
-            {
-                serializationData.ResourceObjectStack.Push(value);
-                try
-                {
-                    WriteFullObjectJson(writer, value, serializer);
-                }
-                finally
-                {
-                    serializationData.ResourceObjectStack.Pop();
-                }
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteFullObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
+            var jsonApiContractResolver = (JsonApiContractResolver)serializer.ContractResolver;
             var valueType = value.GetType();
 
-            if(!(serializer.ContractResolver.ResolveContract(valueType) is ResourceObjectContract metadata))
+            if (!(serializer.ContractResolver.ResolveContract(valueType) is ResourceObjectContract metadata))
                 throw new JsonApiFormatException(
                       writer.Path,
                       $"Expected to find to find resource object, but found '{value}'",
                       "Resource indentifier objects MUST contain 'id' members");
-           
+
+            serializationData.ConverterStack.Push(this);
 
             writer.WriteStartObject();
 
             //serialize id
-            if (ShouldWriteProperty(value, metadata.IdProperty, serializer, out string id))
+            if (WriterUtil.ShouldWriteProperty(value, metadata.IdProperty, serializer, out string id))
             {
                 writer.WritePropertyName(PropertyNames.Id);
                 writer.WriteValue(id);
             }
 
             //serialize type. Will always out put a type
-            ShouldWriteProperty<string>(value, metadata.TypeProperty, serializer, out string type);
-            type = type ?? metadata.DefaultType;
+            WriterUtil.ShouldWriteProperty<string>(value, metadata.TypeProperty, serializer, out string type);
+            type = type ?? WriterUtil.CalculateDefaultJsonApiType(value, serializationData, serializer);
             writer.WritePropertyName(PropertyNames.Type);
             writer.WriteValue(type);
 
             //serialize links
-            if (ShouldWriteProperty(value, metadata.LinksProperty, serializer, out object links))
+            if (WriterUtil.ShouldWriteProperty(value, metadata.LinksProperty, serializer, out object links))
             {
                 writer.WritePropertyName(PropertyNames.Links);
                 serializer.Serialize(writer, links);
             }
-            
+
             //serialize meta
-            if (ShouldWriteProperty(value, metadata.MetaProperty, serializer, out object meta))
+            if (WriterUtil.ShouldWriteProperty(value, metadata.MetaProperty, serializer, out object meta))
             {
                 writer.WritePropertyName(PropertyNames.Meta);
                 serializer.Serialize(writer, meta);
@@ -214,22 +188,25 @@ namespace JsonApiSerializer.JsonConverters
 
             //serialize attributes
             var startedAttributeSection = false;
-            for(var i=0;i< metadata.Attributes.Length; i++)
+            for (var i = 0; i < metadata.Attributes.Length; i++)
             {
                 var attributeProperty = metadata.Attributes[i];
-                if (ShouldWriteProperty(value, attributeProperty, serializer, out object attributeValue))
+                if (WriterUtil.ShouldWriteProperty(value, attributeProperty, serializer, out object attributeValue))
                 {
                     // some relationships are not decalred as such. They exist in properties
                     // with declared types of `object` but the runtime object within is a
                     // relationship. We will check here if this attribute property is really
                     // a relationship, and if it is store it to process later
+
+                    // NOTE: this behviour it leads to nulls being inconsistantly attribute/relationship.
+                    // leaving in for backward compatability but remove on next breaking change
                     var attributeValueType = attributeValue?.GetType();
                     if (attributeValueType != null
-                        && attributeProperty.PropertyType != attributeValueType 
-                        && ResourceObjectContract.TryCreateRelationshipFactory(metadata, attributeValueType, out var relationshipFactory))
+                        && attributeProperty.PropertyType != attributeValueType
+                        && jsonApiContractResolver.ResourceRelationshipConverter.CanConvert(attributeValueType))
                     {
                         undeclaredRelationships = undeclaredRelationships ?? new List<KeyValuePair<JsonProperty, object>>();
-                        undeclaredRelationships.Add(new KeyValuePair<JsonProperty, object>(attributeProperty, relationshipFactory(attributeValue)));
+                        undeclaredRelationships.Add(new KeyValuePair<JsonProperty, object>(attributeProperty, attributeValue));
                         continue;
                     }
 
@@ -263,33 +240,44 @@ namespace JsonApiSerializer.JsonConverters
                     }
                 }
             }
-            if(startedAttributeSection)
+            if (startedAttributeSection)
                 writer.WriteEndObject();
 
             //serialize relationships
             var startedRelationshipSection = false;
 
             //first go through our relationships that were originally declared as attributes
-            for(var i = 0; undeclaredRelationships != null && i < undeclaredRelationships.Count; i++)
+            for (var i = 0; undeclaredRelationships != null && i < undeclaredRelationships.Count; i++)
             {
                 var relationshipProperty = undeclaredRelationships[i].Key;
-                var relationshipObject = undeclaredRelationships[i].Value;
+                var relationshipValue = undeclaredRelationships[i].Value;
                 if (!startedRelationshipSection)
                 {
                     startedRelationshipSection = true;
                     writer.WritePropertyName(PropertyNames.Relationships);
                     writer.WriteStartObject();
                 }
+
+                if (relationshipProperty.MemberConverter != null)
+                    serializationData.ConverterStack.Push(relationshipProperty.MemberConverter);
+
                 writer.WritePropertyName(relationshipProperty.PropertyName);
-                serializer.Serialize(writer, relationshipObject);
+                jsonApiContractResolver.ResourceRelationshipConverter.WriteNullableJson(
+                    writer,
+                    relationshipProperty.PropertyType,
+                    relationshipValue,
+                    serializer);
+
+                if (relationshipProperty.MemberConverter != null)
+                    serializationData.ConverterStack.Pop();
+
             }
 
             //then go through the ones we know to be relationships
-            for (var i = 0; i < metadata.RelationshipTransformations.Length; i++)
+            for (var i = 0; i < metadata.Relationships.Length; i++)
             {
-                var relationshipProperty = metadata.RelationshipTransformations[i].Key;
-                var relationshipTransformation = metadata.RelationshipTransformations[i].Value;
-                if (ShouldWriteProperty(value, relationshipProperty, serializer, out object relationshipValue))
+                var relationshipProperty = metadata.Relationships[i];
+                if (WriterUtil.ShouldWriteProperty(value, relationshipProperty, serializer, out object relationshipValue))
                 {
                     if (!startedRelationshipSection)
                     {
@@ -297,79 +285,36 @@ namespace JsonApiSerializer.JsonConverters
                         writer.WritePropertyName(PropertyNames.Relationships);
                         writer.WriteStartObject();
                     }
+
+                    if (relationshipProperty.MemberConverter != null)
+                        serializationData.ConverterStack.Push(relationshipProperty.MemberConverter);
+
                     writer.WritePropertyName(relationshipProperty.PropertyName);
-                    var relationshipObject = relationshipTransformation(relationshipValue);
-                    serializer.Serialize(writer, relationshipObject);
+                    jsonApiContractResolver.ResourceRelationshipConverter.WriteNullableJson(
+                        writer,
+                        relationshipProperty.PropertyType,
+                        relationshipValue,
+                        serializer);
+
+                    if (relationshipProperty.MemberConverter != null)
+                        serializationData.ConverterStack.Pop();
                 }
             }
             if (startedRelationshipSection)
                 writer.WriteEndObject();
-            
+
             writer.WriteEndObject();
 
             //add reference to this type, so others can reference it
-            if (id != null) {
-                var serializationData = SerializationData.GetSerializationData(writer);
+            if (id != null)
+            {
                 var reference = new ResourceObjectReference(id, type);
                 serializationData.RenderedIncluded.Add(reference);
             }
+
+            serializationData.ConverterStack.Pop();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteReferenceObjectJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            var valueType = value.GetType();
-
-            if (!(serializer.ContractResolver.ResolveContract(valueType) is ResourceObjectContract metadata))
-                throw new JsonApiFormatException(
-                      writer.Path,
-                      $"Expected to find to find resource object, but found '{value}'",
-                      "Resource indentifier objects MUST contain 'id' members");
-
-            writer.WriteStartObject();
-
-            //A "resource identifier object" MUST contain type and id members.
-            //serialize id
-            ShouldWriteProperty(value, metadata.IdProperty, serializer, out string id);
-            writer.WritePropertyName(PropertyNames.Id);
-            writer.WriteValue(id);
-            
-            //serialize type. Will always out put a type
-            ShouldWriteProperty(value, metadata.TypeProperty, serializer, out string type);
-            type = type ?? metadata.DefaultType;
-            writer.WritePropertyName(PropertyNames.Type);
-            writer.WriteValue(type);
-
-            //we will only write the object to included if there are properties that have have data
-            //that we cant include within the reference
-            var willWriteObjectToIncluded = false;
-            willWriteObjectToIncluded = ShouldWriteProperty(value, metadata.LinksProperty, serializer, out object _);
-            for(var i = 0; i < metadata.Attributes.Length && !willWriteObjectToIncluded; i++)
-            {
-                willWriteObjectToIncluded = ShouldWriteProperty(value, metadata.Attributes[i], serializer, out object _);
-            }
-            for (var i = 0; i < metadata.RelationshipTransformations.Length && !willWriteObjectToIncluded; i++)
-            {
-                willWriteObjectToIncluded = ShouldWriteProperty(value, metadata.RelationshipTransformations[i].Key, serializer, out object _);
-            }
-
-            // typically we would just write the meta in the included. But if we are not going to
-            // have something in included we will write the meta inline here
-            if (!willWriteObjectToIncluded && ShouldWriteProperty(value, metadata.MetaProperty, serializer, out object metaVal))
-            {
-                writer.WritePropertyName(PropertyNames.Meta);
-                serializer.Serialize(writer, metaVal);
-            }
-
-            writer.WriteEndObject();
-
-            if (willWriteObjectToIncluded)
-            {
-                var serializationData = SerializationData.GetSerializationData(writer);
-                var reference = new ResourceObjectReference(id, type);
-                serializationData.Included[reference] = value;
-            }
-        }
 
         /// <summary>
         /// If there is no Type property on the item then this is called to generate a default Type name
@@ -381,7 +326,7 @@ namespace JsonApiSerializer.JsonConverters
             return type.Name.ToLowerInvariant();
         }
 
-        internal virtual string GenerateDefaultTypeNameInternal(Type type)
+        internal string GenerateDefaultTypeNameInternal(Type type)
         {
             return GenerateDefaultTypeName(type);
         }
@@ -411,16 +356,11 @@ namespace JsonApiSerializer.JsonConverters
             return contract.DefaultCreator();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ShouldWriteProperty<T>(object value, JsonProperty prop, JsonSerializer serializer, out T propValue)
+        internal object CreateObjectInternal(Type objectType, string jsonapiType, JsonSerializer serializer)
         {
-            if (prop == null)
-            {
-                propValue = default(T);
-                return false;
-            }
-            propValue = (T)prop.ValueProvider.GetValue(value);
-            return propValue != null || (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Include;
+            return this.CreateObject(objectType, jsonapiType, serializer);
         }
+
+        
     }
 }

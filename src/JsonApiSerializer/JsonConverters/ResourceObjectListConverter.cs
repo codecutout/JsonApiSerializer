@@ -1,4 +1,5 @@
 ﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.ContractResolvers.Contracts;
 using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.SerializationState;
