@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard1.0;netstandard1.5;net45</TargetFrameworks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.6.0-beta01</Version>
+    <Version>1.6.0</Version>
     <Authors>Alex Davies</Authors>
     <Company>Codecutout</Company>
     <Description>JsonApiSerializer supports configurationless serializing and deserializing objects into the json:api format (http://jsonapi.org).</Description>
