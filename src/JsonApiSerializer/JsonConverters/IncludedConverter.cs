@@ -19,7 +19,7 @@ namespace JsonApiSerializer.JsonConverters
             var reference = ReaderUtil.ReadAheadToIdentifyObject(forkableReader);
             var serializationData = SerializationData.GetSerializationData(forkableReader);
             
-            if(!serializationData.Included.TryGetValue(reference, out var existingObject))
+            if (!serializationData.Included.TryGetValue(reference, out var existingObject))
             {
                 //we dont know what type this object should be so we will just save it as a JObject
                 var unknownObject = serializer.Deserialize<JObject>(forkableReader);

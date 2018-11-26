@@ -203,7 +203,7 @@ Assert.Equal("2017-04-02T23:28:35", articlesRoot.Meta["created"]);
 
 ```json
 {
-	"data": [{
+	"data": {
 		"type": "articles",
 		"id": "1",
 		"attributes": {
@@ -218,7 +218,7 @@ Assert.Equal("2017-04-02T23:28:35", articlesRoot.Meta["created"]);
 				"data": { "type": "people", "id": "9" }
 			}
 		}
-	}]
+	}
 }
 ```
 
@@ -234,9 +234,65 @@ public class Article
 ```
 
 ```csharp
-Article[] articles = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
-Assert.Equal("http://example.com/articles/1/relationships/author", articles[0].links["self"].Href);
-Assert.Equal("http://example.com/articles/1/author", articles[0].links["related"].Href);
+Article[] article = JsonConvert.DeserializeObject<Article>(json, new JsonApiSerializerSettings());
+Assert.Equal("http://example.com/articles/1/relationships/author", article.Author.links["self"].Href);
+Assert.Equal("http://example.com/articles/1/author", article.Author.links["related"].Href);
+```
+
+### Resource Identifiers
+
+json:api specification allows defining metadata at the [resource identifier](https://jsonapi.org/format/#document-resource-identifier-objects) level. By default this resource identifier `meta` is folded into the object's `meta` (if the field is present).
+
+However if you have distinct resource identifier `meta` and resource object `meta` you may define a relationship of type `IResourceIdentifier<T>`. This object will populate the `meta` property and place the resource object details within `Value` field.
+
+```json
+{
+	"data": {
+		"type": "articles",
+		"id": "1",
+		"attributes": {
+			"title": "JSON API paints my bikeshed!"
+		},
+		"relationships": {
+			"author": {
+				"meta": {
+				  "verified": true,
+				},
+				"data": { "type": "people", "id": "9" }
+			}
+		}
+	},
+	"included": [{
+		"type": "people",
+		"id": "9",
+		"attributes": {
+		  "first-name": "Dan",
+		  "last-name": "Gebhardt",
+		  "twitter": "dgeb"
+		},
+		"meta": {
+			"verified" : false
+		}
+	}]
+}
+```
+
+```csharp
+public class Article
+{
+    public string Id { get; set; }
+
+    public string Title { get; set; }
+
+    public ResourceIdentifier<Person> Author { get; set; }
+}
+```
+
+```csharp
+Article[] article = JsonConvert.DeserializeObject<Article[]>(json, new JsonApiSerializerSettings());
+
+Assert.Equal(true, article.Author.meta["verified"]); //resource identifier meta
+Assert.Equal(true, article.Author.Value.meta["verified"]); //object meta
 ```
 
 ### Links

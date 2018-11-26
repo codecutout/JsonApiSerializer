@@ -28,5 +28,8 @@ namespace JsonApiSerializer.Test.Models.Articles.VanillaJson
 
         [JsonProperty(PropertyName = "links", NullValueHandling = NullValueHandling.Ignore)]
         public Links Links { get; set; }
+
+        [JsonProperty(PropertyName = "meta", NullValueHandling = NullValueHandling.Ignore)]
+        public Meta Meta { get; set; }
     }
 }

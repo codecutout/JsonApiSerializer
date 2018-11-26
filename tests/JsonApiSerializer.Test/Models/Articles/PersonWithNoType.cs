@@ -3,10 +3,8 @@ using Newtonsoft.Json;
 
 namespace JsonApiSerializer.Test.Models.Articles
 {
-    public class Person
+    public class PersonWithNoType
     {
-        public string Type { get; set; } = "people";
-
         public string Id { get; set; }
 
         [JsonProperty(propertyName: "first-name")]

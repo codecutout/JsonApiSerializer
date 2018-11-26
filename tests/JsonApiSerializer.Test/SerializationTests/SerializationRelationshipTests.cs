@@ -478,6 +478,43 @@ namespace JsonApiSerializer.Test.SerializationTests
         }
 
         [Fact]
+        public void When_relationship_include_null_should_serialize_relationships()
+        {
+            var root = new ArticleWithRelationship
+            {
+                Id = "1234",
+                Title = "My Article",
+                Comments = null,
+                Author = null
+            };
+            var includeNull = new JsonApiSerializerSettings()
+            {
+                Formatting = Formatting.Indented,
+                NullValueHandling = NullValueHandling.Include
+            };
+            var json = JsonConvert.SerializeObject(root, includeNull);
+            var expectedjson = @"{
+                ""data"": {
+                    ""id"": ""1234"",
+                    ""type"": ""articles"",
+                    ""links"": null,
+                    ""attributes"": {
+                        ""title"": ""My Article""
+                    },
+                    ""relationships"": {
+                        ""comments"": {
+                            ""data"" : []
+                        },
+                        ""author"": {
+                            ""data"" : null
+                        }
+                    }
+                }
+            }";
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
         public void When_data_missing_should_not_serialize_data()
         {
             var root = new ArticleWithDatalessRelationship

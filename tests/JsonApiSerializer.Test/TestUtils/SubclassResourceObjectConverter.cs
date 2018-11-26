@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using JsonApiSerializer.JsonConverters;
+using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 
 namespace JsonApiSerializer.Test.TestUtils
