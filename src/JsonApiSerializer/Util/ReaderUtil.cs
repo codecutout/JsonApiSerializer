@@ -185,7 +185,7 @@ namespace JsonApiSerializer.Util
             }
         }
 
-        public static string ReadUntilEndsWith(JsonReader reader, string pathEndsWith)
+        public static string ReadUntilStart(JsonReader reader, string pathEndsWith)
         {
             var startPath = reader.Path;
 
