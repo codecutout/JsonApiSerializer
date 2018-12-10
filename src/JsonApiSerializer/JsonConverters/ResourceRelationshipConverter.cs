@@ -144,22 +144,11 @@ namespace JsonApiSerializer.JsonConverters
             var jsonApiContractResolver = (JsonApiContractResolver)serializer.ContractResolver;
             var contract = jsonApiContractResolver.ResolveContract(objectType);
 
+            // we be a ResourceObject rather than a RelationshpObject
+            // if so we will just read the data property of the resource object
             if (!(contract is ResourceRelationshipContract rrc))
             {
-                // read into the 'data' path
-                var preDataPath = ReaderUtil.ReadUntilEndsWith(reader, PropertyNames.Data);
-
-                // let the resource identifier deal with the rest
-                var identifier = jsonApiContractResolver.ResourceIdentifierConverter.ReadJson(
-                    reader, 
-                    objectType, 
-                    existingValue, 
-                    serializer);
-
-                // read out of the 'data' element
-                ReaderUtil.ReadUntilEnd(reader, preDataPath);
-
-                return identifier;
+                return ReadJsonDataPropertyAsResourceObject(reader, objectType, existingValue, serializer, jsonApiContractResolver);
             }
 
 
@@ -195,6 +184,43 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
             return obj;
+        }
+
+        private static object ReadJsonDataPropertyAsResourceObject(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer, JsonApiContractResolver jsonApiContractResolver)
+        {
+            object resourceObject = null;
+            var isValid = false;
+            foreach (var propName in ReaderUtil.IterateProperties(reader))
+            {
+                switch (propName)
+                {
+                    case PropertyNames.Data:
+                        isValid = true;
+                        // let the resource identifier deal with the rest
+                        resourceObject = jsonApiContractResolver.ResourceIdentifierConverter.ReadJson(
+                            reader,
+                            objectType,
+                            existingValue,
+                            serializer);
+                        break;
+                    case PropertyNames.Links:
+                    case PropertyNames.Meta:
+                        isValid = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (!isValid)
+            {
+                var path = (reader as ForkableJsonReader)?.FullPath ?? reader.Path;
+                throw new JsonApiFormatException(path,
+                    $"Expected to find one of links, data or meta on relationship object",
+                    "A relationship object MUST contain at least one of: links, data or meta");
+            }
+
+            return resourceObject;
         }
     }
 }

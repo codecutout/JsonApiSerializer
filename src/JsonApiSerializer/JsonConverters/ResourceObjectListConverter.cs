@@ -38,18 +38,12 @@ namespace JsonApiSerializer.JsonConverters
             if (!serializationData.HasProcessedDocumentRoot)
                 return DocumentRootConverter.ResolveAsRootData(reader, objectType, serializer);
 
-            //read into the 'Data' path
-            var preDataPath = ReaderUtil.ReadUntilEndsWith(reader, PropertyNames.Data);
-
             //we should be dealing with list types, but we also want the element type
             if (!ListUtil.IsList(objectType, out Type elementType))
                 throw new ArgumentException($"{typeof(ResourceObjectListConverter)} can only read json lists", nameof(objectType));
 
             var itemsIterator = ReaderUtil.IterateList(reader).Select(x => serializer.Deserialize(reader, elementType));
             var list = ListUtil.CreateList(objectType, itemsIterator);
-
-            //read out of the 'Data' path
-            ReaderUtil.ReadUntilEnd(reader, preDataPath);
 
             return list;
         }

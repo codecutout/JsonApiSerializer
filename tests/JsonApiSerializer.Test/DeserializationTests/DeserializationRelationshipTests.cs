@@ -1,7 +1,9 @@
-﻿using JsonApiSerializer.JsonApi;
+﻿using JsonApiSerializer.Exceptions;
+using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.Test.Models.Articles;
 using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -117,6 +119,52 @@ namespace JsonApiSerializer.Test.DeserializationTests
             Assert.Equal("I like XML better", comments2[1].Body);
         }
 
-
+        [Fact]
+        public void When_dataless_relationship_should_deserialize()
+        {
+            var json = @"
+{  
+    ""data"": {
+    ""attributes"":{
+        ""title"":""Test"",
+    },
+    ""relationships"":{
+        ""comments"":{
+            ""links"":{
+                ""self"":""https://localhost/api/articles/1/comments"",
+            }
+        }
+    },
+    ""type"":""articles"",
+    ""id"":""1""
     }
+}";
+            var obj = JsonConvert.DeserializeObject<Article>(json, new JsonApiSerializerSettings());
+
+            Assert.Equal("Test", obj.Title);
+            Assert.Null(obj.Comments);
+        }
+
+        [Fact]
+        public void When_empty_relationship_should_throw()
+        {
+            var json = @"
+{  
+    ""data"": {
+    ""attributes"":{
+        ""title"":""Test"",
+    },
+    ""relationships"":{
+        ""comments"":{
+           
+        }
+    },
+    ""type"":""articles"",
+    ""id"":""1""
+    }
+}";
+            Assert.Throws<JsonApiFormatException>(() => JsonConvert.DeserializeObject<Article>(json, new JsonApiSerializerSettings()));
+        }
+    }
+   
 }
