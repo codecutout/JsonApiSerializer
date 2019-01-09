@@ -2,16 +2,16 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard1.0;netstandard1.5;net45</TargetFrameworks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.6.1</Version>
+    <Version>1.6.2</Version>
     <Authors>Alex Davies</Authors>
     <Company>Codecutout</Company>
     <Description>JsonApiSerializer supports configurationless serializing and deserializing objects into the json:api format (http://jsonapi.org).</Description>
     <PackageLicenseUrl>https://github.com/codecutout/JsonApiSerializer/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/codecutout/JsonApiSerializer</PackageProjectUrl>
     <PackageTags>jsonapiserializer jsonapi json:api json.net serialization deserialization jsonapi.net</PackageTags>
-    <AssemblyVersion>1.6.1.0</AssemblyVersion>
-    <FileVersion>1.6.1.0</FileVersion>
-    <PackageReleaseNotes></PackageReleaseNotes>
+    <AssemblyVersion>1.6.2.0</AssemblyVersion>
+    <FileVersion>1.6.2.0</FileVersion>
+    <PackageReleaseNotes>Added support for json.net conditional serialization</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />

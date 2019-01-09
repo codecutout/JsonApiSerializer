@@ -21,7 +21,8 @@ namespace JsonApiSerializer.Util
                 return false;
             }
             propValue = (T)prop.ValueProvider.GetValue(value);
-            return propValue != null || (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Include;
+            var shouldSerialize = prop.ShouldSerialize == null || prop.ShouldSerialize(value) == true;
+            return shouldSerialize && (propValue != null || (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Include);
         }
 
         public static bool TryUseCustomConvertor(JsonWriter writer, object value, JsonSerializer serializer, JsonConverter excludeConverter)
