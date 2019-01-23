@@ -408,4 +408,24 @@ public class Startup
 }
 ```
 
+### Using with MongoDb ObjectId
+If you want to use the serializer with the MongoDb ObjectId for the Id, you probably get an casting or type error, because an id should be a string, following the json:api spec. To fix this, just add BsonId and BsonRepresentation(BsonType.ObjectId):
+
+```csharp
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace Models
+{
+    public class ModelName
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
+
+    }
+}
+
+```
+
 
