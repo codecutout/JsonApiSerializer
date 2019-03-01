@@ -38,7 +38,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
             var settings = new JsonApiSerializerSettings();
             var dateTimes = JsonConvert.DeserializeObject<DateTimes>(json,settings);
 
-            //Not happy with the behaviour to deserialize DateTime into DateTimeKind.Local, 
+            //Not happy with the behaviour to deserialize DateTime into DateTimeKind.Local,
             //but it is the Json.NET default
             Assert.Equal("2017-01-01T12:00:00+02:00", dateTimes.DateTimeOffset.ToString("yyyy-MM-ddTHH:mm:sszzz"));
             Assert.Equal("2017-01-01T10:00:00", dateTimes.DateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss"));
@@ -63,7 +63,7 @@ namespace JsonApiSerializer.Test.DeserializationTests
 }
 ";
             var settings = new JsonApiSerializerSettings();
-            var localOffset = new DateTimeOffset(new DateTime(0), TimeZoneInfo.Local.BaseUtcOffset).ToString("zzz");
+            var localOffset = new DateTimeOffset(DateTime.Now, TimeZoneInfo.Local.BaseUtcOffset).ToString("zzz");
 
             var dateTimes = JsonConvert.DeserializeObject<DateTimes>(json, settings);
 

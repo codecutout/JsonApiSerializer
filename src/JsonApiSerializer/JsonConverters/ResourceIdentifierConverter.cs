@@ -15,6 +15,8 @@ using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
+    using ContractResolvers.Attributes;
+
     internal class ResourceIdentifierConverter : JsonConverter
     {
         private readonly Func<Type, bool> isResourceObject;
@@ -35,7 +37,7 @@ namespace JsonApiSerializer.JsonConverters
 
         private bool IsArrayOf(Type type , Func<Type, bool> elementTypeCheck)
         {
-            return ListUtil.IsList(type, out Type elementType) 
+            return ListUtil.IsList(type, out Type elementType)
                 && elementTypeCheck(elementType);
         }
 
@@ -75,7 +77,7 @@ namespace JsonApiSerializer.JsonConverters
                        $"Expected to find a resource identifier or resource object, but found '{value}'",
                        "Resource indentifier objects MUST contain 'id' members");
             }
-           
+
         }
 
         private void WriteResourceObjectJson(JsonWriter writer, object resourceObject, JsonSerializer serializer)
@@ -142,7 +144,7 @@ namespace JsonApiSerializer.JsonConverters
             var valueType = value.GetType();
             var resourceIdentifierContract = (ResourceIdentifierContract)serializer.ContractResolver.ResolveContract(valueType);
             var resourceObject = resourceIdentifierContract.ResourceObjectProperty.ValueProvider.GetValue(value);
-          
+
             if (resourceObject == null)
             {
                 writer.WriteNull();
@@ -227,7 +229,7 @@ namespace JsonApiSerializer.JsonConverters
             // if the value has been explicitly set to null then the value of the element is simply null
             if (reader.TokenType == JsonToken.Null)
                 return null;
-            
+
             var serializationData = SerializationData.GetSerializationData(reader);
             var jsonApiContractResolver = (JsonApiContractResolver)serializer.ContractResolver;
             var resourceIdentifierContract = (ResourceIdentifierContract)jsonApiContractResolver.ResolveContract(objectType);
@@ -284,9 +286,9 @@ namespace JsonApiSerializer.JsonConverters
                     var resourceObjectReader = new ForkableJsonReader(resoruceObjectJObject.CreateReader(), reader.SerializationDataToken);
                     resourceObjectReader.Read(); //JObject readers begin at Not Started
                     resourceObject = jsonApiContractResolver.ResourceObjectConverter.ReadJson(
-                        resourceObjectReader, 
-                        objectType, 
-                        null, 
+                        resourceObjectReader,
+                        objectType,
+                        null,
                         serializer);
                 }
 
@@ -298,15 +300,23 @@ namespace JsonApiSerializer.JsonConverters
                 var contract = (JsonObjectContract)jsonApiContractResolver.ResolveContract(objectType);
 
                 resourceObject = ReaderUtil.CreateObject(serializationData, objectType, reference.Type, serializer);
+                var propertyAttr = objectType.GetTypeInfo().GetCustomAttribute<JsonApiProperties>() ?? new JsonApiProperties();
 
                 // for placeholders we will just read the top level properties
                 // it is unlikely to have attributes/relationships present
                 foreach (var propName in ReaderUtil.IterateProperties(reader))
                 {
+                    // If an "Id" override attribute is present then deserialize to the correct object property
+                    var pName = propName;
+                    if (propName == PropertyNames.Id && propertyAttr.Id != string.Empty)
+                    {
+                        pName = propertyAttr.Id;
+                    }
+
                     var successfullyPopulateProperty = ReaderUtil.TryPopulateProperty(
                         serializer,
                         resourceObject,
-                        contract.Properties.GetClosestMatchProperty(propName),
+                        contract.Properties.GetClosestMatchProperty(pName),
                         reader);
                 }
 

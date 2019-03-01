@@ -1,4 +1,4 @@
-﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.ContractResolvers;
 using JsonApiSerializer.ContractResolvers.Contracts;
 using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi;
@@ -18,6 +18,8 @@ using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
+    using ContractResolvers.Attributes;
+
     /// <summary>
     /// Provides functionality to convert a JsonApi resource object into a .NET object
     /// </summary>
@@ -66,12 +68,21 @@ namespace JsonApiSerializer.JsonConverters
 
 
 
+            var propertyAttr = objectType.GetTypeInfo().GetCustomAttribute<JsonApiProperties>() ?? new JsonApiProperties();
+
             foreach (var propName in ReaderUtil.IterateProperties(reader))
             {
+                // If an "Id" override attribute is present then deserialize to the correct object property
+                var pName = propName;
+                if (propName == PropertyNames.Id && propertyAttr.Id != string.Empty)
+                {
+                    pName = propertyAttr.Id;
+                }
+
                 var successfullyPopulateProperty = ReaderUtil.TryPopulateProperty(
                     serializer,
                     existingValue,
-                    contract.Properties.GetClosestMatchProperty(propName),
+                    contract.Properties.GetClosestMatchProperty(pName),
                     reader);
 
                 //flatten out attributes onto the object
@@ -101,7 +112,7 @@ namespace JsonApiSerializer.JsonConverters
                         // are no longer created by this object converter. We are passing the
                         // convertor via the serialization data so ResourceIdentifierConverter
                         // can access it down the line.
-                        // next breaking change remove support for ResourceObjectConverter 
+                        // next breaking change remove support for ResourceObjectConverter
                         // member converters
                         if (prop.MemberConverter != null)
                             serializationData.ConverterStack.Push(prop.MemberConverter);
@@ -181,7 +192,7 @@ namespace JsonApiSerializer.JsonConverters
                 serializer.Serialize(writer, meta);
             }
 
-            // store all the relationships, that appear to be attributes from the 
+            // store all the relationships, that appear to be attributes from the
             // property declared type, types but the runtime type shows they are
             // actaully relationships
             List<KeyValuePair<JsonProperty, object>> undeclaredRelationships = null;
@@ -361,6 +372,6 @@ namespace JsonApiSerializer.JsonConverters
             return this.CreateObject(objectType, jsonapiType, serializer);
         }
 
-        
+
     }
 }

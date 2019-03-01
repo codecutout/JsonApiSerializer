@@ -43,6 +43,62 @@ namespace JsonApiSerializer.Test.SerializationTests
         }
 
         [Fact]
+        public void When_fields_controlled_by_jsonapi_attributes_should_respect_attributes()
+        {
+            var root = new DocumentRoot<PersonWithJsonApiAttributes>
+            {
+                Data = new PersonWithJsonApiAttributes
+                {
+                    Id = 1234, //treated as attribute
+                    Email = "john@test.com", //treated as id
+                    Type = "Employee", //treated as attribute
+                }
+            };
+
+            var json = JsonConvert.SerializeObject(root, settings);
+
+            Assert.Equal(@"
+                {
+                  ""data"": {
+                    ""id"": ""john@test.com"",
+                    ""type"": ""people"",
+                    ""attributes"": {
+                      ""id"": 1234,
+                      ""type"": ""Employee"",
+                    }
+                  }
+                }".Trim(), json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
+        public void When_fields_controlled_by_jsonapi_attributes_should_respect_attributes_no_type()
+        {
+            var root = new DocumentRoot<PersonWithJsonApiAttributesNoType>
+            {
+                Data = new PersonWithJsonApiAttributesNoType
+                {
+                    Id = "1234", //treated as attribute
+                    Email = "john@test.com", //treated as id
+                    Type = "Employee", //treated as attribute
+                }
+            };
+
+            var json = JsonConvert.SerializeObject(root, settings);
+
+            Assert.Equal(@"
+                {
+                  ""data"": {
+                    ""id"": ""1234"",
+                    ""type"": ""personwithjsonapiattributesnotype"",
+                    ""attributes"": {
+                      ""email"": ""john@test.com"",
+                      ""type"": ""Employee"",
+                    }
+                  }
+                }".Trim(), json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
         public void When_fields_controlled_by_jsonnet_nullinclude_attributes_should_include_null()
         {
             var root = new DocumentRoot<ArticleWithNullIncludeProperties>

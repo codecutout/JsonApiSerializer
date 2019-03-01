@@ -5,10 +5,13 @@ using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace JsonApiSerializer.ContractResolvers.Contracts
 {
+    using Attributes;
+
     internal class ResourceObjectContract : JsonObjectContractWrap
     {
         public readonly string DefaultType;
@@ -28,28 +31,38 @@ namespace JsonApiSerializer.ContractResolvers.Contracts
 
             var attributes = new List<JsonProperty>();
             var relationships = new List<JsonProperty>();
+
+            var propertyAttr = jsonObjectContract.CreatedType.GetTypeInfo().GetCustomAttribute<JsonApiProperties>() ?? new JsonApiProperties();
+            var propertyNameId = propertyAttr.Id == string.Empty ? PropertyNames.Id : propertyAttr.Id;
+            var propertyNameType = propertyAttr.Type ==  string.Empty ? PropertyNames.Type : propertyAttr.Type;
+
             foreach (var prop in jsonObjectContract.Properties.Where(x => !x.Ignored))
             {
                 switch (prop.PropertyName)
                 {
                     //In addition, a resource object MAY contain any of these top - level members: links, meta, attributes, relationships
-                    case PropertyNames.Id: //Id is optional on base objects
-                        IdProperty = prop;
-                        break;
                     case PropertyNames.Links:
                         LinksProperty = prop;
                         break;
                     case PropertyNames.Meta:
                         MetaProperty = prop;
                         break;
-                    case PropertyNames.Type:
-                        TypeProperty = prop;
-                        break;
                     case var _ when isRelationship(prop.PropertyType):
                         relationships.Add(prop);
                         break;
                     default:
-                        attributes.Add(prop);
+                        if (prop.PropertyName == propertyNameId)
+                        {
+                            IdProperty = prop;
+                        }
+                        else if (prop.PropertyName == propertyNameType)
+                        {
+                            TypeProperty = prop;
+                        }
+                        else
+                        {
+                            attributes.Add(prop);
+                        }
                         break;
                 }
             }
