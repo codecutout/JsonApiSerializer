@@ -1,4 +1,5 @@
-using JsonApiSerializer.ContractResolvers;
+﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.ContractResolvers.Attributes;
 using JsonApiSerializer.ContractResolvers.Contracts;
 using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi;
@@ -18,8 +19,6 @@ using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
-    using ContractResolvers.Attributes;
-
     /// <summary>
     /// Provides functionality to convert a JsonApi resource object into a .NET object
     /// </summary>
