@@ -1,4 +1,5 @@
 ﻿using JsonApiSerializer.ContractResolvers;
+using JsonApiSerializer.ContractResolvers.Attributes;
 using JsonApiSerializer.ContractResolvers.Contracts;
 using JsonApiSerializer.Exceptions;
 using JsonApiSerializer.JsonApi.WellKnown;
@@ -11,12 +12,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
-    using ContractResolvers.Attributes;
-
     internal class ResourceIdentifierConverter : JsonConverter
     {
         private readonly Func<Type, bool> isResourceObject;
