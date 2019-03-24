@@ -26,6 +26,20 @@ namespace JsonApiSerializer.JsonConverters
     {
         private static readonly Regex DataReadPathRegex = new Regex($@"^$|{PropertyNames.Included}(\[\d+\])?$|{"data"}(\[\d+\])?$");
 
+        private static readonly List<Type> AllowedIdTypes = new List<Type> {
+            typeof(string),
+            typeof(int),
+            typeof(long),
+            typeof(Guid),
+            typeof(int?),
+            typeof(long?),
+            typeof(Guid?),
+            typeof(uint),
+            typeof(ulong),
+            typeof(uint?),
+            typeof(ulong?),
+        };
+
         public override bool CanConvert(Type objectType)
         {
             return TypeInfoShim.GetPropertyFromInhertianceChain(objectType.GetTypeInfo(), "Id") != null;
@@ -155,8 +169,18 @@ namespace JsonApiSerializer.JsonConverters
             writer.WriteStartObject();
 
             //serialize id
-            if (WriterUtil.ShouldWriteProperty(value, metadata.IdProperty, serializer, out string id))
+            string id = null;
+            if (WriterUtil.ShouldWriteProperty(value, metadata.IdProperty, serializer, out object objId))
             {
+                //we will allow some non-string properties if it is trival to convert to a string
+                if (!AllowedIdTypes.Contains(metadata.IdProperty.PropertyType))
+                    throw new JsonApiFormatException(
+                            writer.Path,
+                            $"Expected Id property to be a string or primitive but found it to be '{objId?.GetType()}'",
+                            "The values of the id member MUST be a string");
+
+                id = objId as string ?? objId?.ToString();
+
                 writer.WritePropertyName(PropertyNames.Id);
                 writer.WriteValue(id);
             }
@@ -360,7 +384,5 @@ namespace JsonApiSerializer.JsonConverters
         {
             return this.CreateObject(objectType, jsonapiType, serializer);
         }
-
-        
     }
 }
