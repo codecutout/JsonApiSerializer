@@ -5,6 +5,7 @@ using JsonApiSerializer.SerializationState;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -12,6 +13,20 @@ namespace JsonApiSerializer.Util
 {
     internal static class WriterUtil
     {
+        private static readonly List<Type> AllowedIdTypes = new List<Type> {
+            typeof(string),
+            typeof(int),
+            typeof(long),
+            typeof(Guid),
+            typeof(int?),
+            typeof(long?),
+            typeof(Guid?),
+            typeof(uint),
+            typeof(ulong),
+            typeof(uint?),
+            typeof(ulong?),
+        };
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ShouldWriteProperty<T>(object value, JsonProperty prop, JsonSerializer serializer, out T propValue)
         {
@@ -23,6 +38,31 @@ namespace JsonApiSerializer.Util
             propValue = (T)prop.ValueProvider.GetValue(value);
             var shouldSerialize = prop.ShouldSerialize == null || prop.ShouldSerialize(value) == true;
             return shouldSerialize && (propValue != null || (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Include);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryConvertIdToString(object objId, out string stringId)
+        {
+            if (objId is string str)
+            {
+                stringId = str;
+                return true;
+            }
+            else if (objId == null)
+            {
+                stringId = null;
+                return false;
+            }
+            else if (AllowedIdTypes.Contains(objId.GetType())) {
+                //we will allow some non-string properties if it is trival to convert to a string
+                stringId = objId?.ToString();
+                return true;
+            }
+            else
+            {
+                stringId = default(string);
+                return false;
+            }
         }
 
         public static bool TryUseCustomConvertor(JsonWriter writer, object value, JsonSerializer serializer, JsonConverter excludeConverter)
