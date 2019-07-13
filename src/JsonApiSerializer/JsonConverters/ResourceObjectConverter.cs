@@ -172,20 +172,12 @@ namespace JsonApiSerializer.JsonConverters
             string id = null;
             if (WriterUtil.ShouldWriteProperty(value, metadata.IdProperty, serializer, out object objId))
             {
-                if(!WriterUtil.TryConvertIdToString(objId, out id))
-                    throw new JsonApiFormatException(
-                        writer.Path,
-                        $"Expected Id property to be a string or primitive but found it to be '{objId?.GetType()}'",
-                        "The values of the id member MUST be a string");
-                writer.WritePropertyName(PropertyNames.Id);
-                writer.WriteValue(id);
+                WriterUtil.WriteResourceObjectId(writer, objId, out id);
             }
 
             //serialize type. Will always out put a type
             WriterUtil.ShouldWriteProperty<string>(value, metadata.TypeProperty, serializer, out string type);
-            type = type ?? WriterUtil.CalculateDefaultJsonApiType(value, serializationData, serializer);
-            writer.WritePropertyName(PropertyNames.Type);
-            writer.WriteValue(type);
+            WriterUtil.WriteResourceObjectType(writer, type, value, serializationData, serializer, out type);
 
             //serialize links
             if (WriterUtil.ShouldWriteProperty(value, metadata.LinksProperty, serializer, out object links))
