@@ -87,6 +87,52 @@ namespace JsonApiSerializer.Test.SerializationTests
         }
 
         [Fact]
+        public void When_id_int_in_explicit_identifier_should_serialize_as_string()
+        {
+            var root = DocumentRoot.Create(new
+            {
+                Id = 7357, //int id
+                Type = "articles",
+                Title = "My title",
+                Author = ResourceIdentifier.Create(new
+                {
+                    Id = 7357, //int relationship
+                    Type = "person",
+                    Name = "Scribble McPen"
+                })
+            });
+
+            var json = JsonConvert.SerializeObject(root, settings);
+            var expectedjson = @"{
+              ""data"": {
+                ""id"": ""7357"",
+                ""type"": ""articles"",
+                ""attributes"": {
+                  ""title"": ""My title""
+                },
+                ""relationships"": {
+                  ""author"": {
+                    ""data"": {
+                      ""id"": ""7357"",
+                      ""type"": ""person""
+                    }
+                  }
+                }
+              },
+              ""included"": [
+                {
+                  ""id"": ""7357"",
+                  ""type"": ""person"",
+                  ""attributes"": {
+                    ""name"": ""Scribble McPen""
+                  }
+                }
+              ]
+            }";
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
         public void When_id_object_should_throw()
         {
             var root = new DocumentRoot<ArticleWithIdType<Tuple<string,string>>>

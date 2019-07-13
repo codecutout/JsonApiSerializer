@@ -1,5 +1,7 @@
 ﻿using JsonApiSerializer.ContractResolvers;
 using JsonApiSerializer.ContractResolvers.Contracts;
+using JsonApiSerializer.Exceptions;
+using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.JsonConverters;
 using JsonApiSerializer.SerializationState;
 using Newtonsoft.Json;
@@ -63,6 +65,32 @@ namespace JsonApiSerializer.Util
                 stringId = default(string);
                 return false;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteResourceObjectId(JsonWriter writer, object id, out string writtenId)
+        {
+            if (!WriterUtil.TryConvertIdToString(id, out writtenId))
+                throw new JsonApiFormatException(
+                    writer.Path,
+                    $"Expected Id property to be a string or primitive but found it to be '{id?.GetType()}'",
+                    "The values of the id member MUST be a string");
+            writer.WritePropertyName(PropertyNames.Id);
+            writer.WriteValue(writtenId);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteResourceObjectType(
+            JsonWriter writer, 
+            string type, 
+            object resourceObject, 
+            SerializationData serializationData, 
+            JsonSerializer serializer,
+            out string writtenType)
+        {
+            writtenType = type ?? WriterUtil.CalculateDefaultJsonApiType(resourceObject, serializationData, serializer);
+            writer.WritePropertyName(PropertyNames.Type);
+            writer.WriteValue(writtenType);
         }
 
         public static bool TryUseCustomConvertor(JsonWriter writer, object value, JsonSerializer serializer, JsonConverter excludeConverter)
