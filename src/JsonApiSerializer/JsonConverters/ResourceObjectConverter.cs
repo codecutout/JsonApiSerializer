@@ -172,15 +172,11 @@ namespace JsonApiSerializer.JsonConverters
             string id = null;
             if (WriterUtil.ShouldWriteProperty(value, metadata.IdProperty, serializer, out object objId))
             {
-                //we will allow some non-string properties if it is trival to convert to a string
-                if (!AllowedIdTypes.Contains(metadata.IdProperty.PropertyType))
+                if(!WriterUtil.TryConvertIdToString(objId, out id))
                     throw new JsonApiFormatException(
-                            writer.Path,
-                            $"Expected Id property to be a string or primitive but found it to be '{objId?.GetType()}'",
-                            "The values of the id member MUST be a string");
-
-                id = objId as string ?? objId?.ToString();
-
+                        writer.Path,
+                        $"Expected Id property to be a string or primitive but found it to be '{objId?.GetType()}'",
+                        "The values of the id member MUST be a string");
                 writer.WritePropertyName(PropertyNames.Id);
                 writer.WriteValue(id);
             }

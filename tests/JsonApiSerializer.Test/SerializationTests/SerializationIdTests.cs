@@ -43,24 +43,45 @@ namespace JsonApiSerializer.Test.SerializationTests
         [Fact]
         public void When_id_int_should_serialize_as_string()
         {
-            var root = new DocumentRoot<ArticleWithIdType<int>>
+            var root = DocumentRoot.Create(new
             {
-                Data = new ArticleWithIdType<int>
+                Id = 7357, //int id
+                Type = "articles",
+                Title = "My title",
+                Author = new
                 {
-                    Id = 7357,
-                    Title = "My title"
+                    Id = 7357, //int relationship
+                    Type = "person",
+                    Name = "Scribble McPen"
                 }
-            };
+            });
 
             var json = JsonConvert.SerializeObject(root, settings);
             var expectedjson = @"{
-                ""data"": {
-                    ""id"": ""7357"",
-                    ""type"": ""articles"",
-                    ""attributes"": {
-                        title: ""My title""
-                    }
+              ""data"": {
+                ""id"": ""7357"",
+                ""type"": ""articles"",
+                ""attributes"": {
+                  ""title"": ""My title""
                 },
+                ""relationships"": {
+                  ""author"": {
+                    ""data"": {
+                      ""id"": ""7357"",
+                      ""type"": ""person""
+                    }
+                  }
+                }
+              },
+              ""included"": [
+                {
+                  ""id"": ""7357"",
+                  ""type"": ""person"",
+                  ""attributes"": {
+                    ""name"": ""Scribble McPen""
+                  }
+                }
+              ]
             }";
             Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
         }
