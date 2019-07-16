@@ -15,7 +15,7 @@ namespace JsonApiSerializer.Util
 {
     internal static class WriterUtil
     {
-        private static readonly List<Type> AllowedIdTypes = new List<Type> {
+        private static readonly List<Type> AllowedStringConversions = new List<Type> {
             typeof(string),
             typeof(int),
             typeof(long),
@@ -30,67 +30,36 @@ namespace JsonApiSerializer.Util
         };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool ShouldWriteProperty<T>(object value, JsonProperty prop, JsonSerializer serializer, out T propValue)
+        public static bool ShouldWriteProperty(object value, JsonProperty prop, JsonSerializer serializer, out object propValue)
         {
             if (prop == null)
             {
-                propValue = default(T);
+                propValue = default;
                 return false;
             }
-            propValue = (T)prop.ValueProvider.GetValue(value);
+            propValue = prop.ValueProvider.GetValue(value);
             var shouldSerialize = prop.ShouldSerialize == null || prop.ShouldSerialize(value) == true;
             return shouldSerialize && (propValue != null || (prop.NullValueHandling ?? serializer.NullValueHandling) == NullValueHandling.Include);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryConvertIdToString(object objId, out string stringId)
+        public static bool ShouldWriteStringProperty(JsonWriter writer, object value, JsonProperty prop, JsonSerializer serializer, out string propValue)
         {
-            if (objId is string str)
+            if (prop == null)
             {
-                stringId = str;
-                return true;
-            }
-            else if (objId == null)
-            {
-                stringId = null;
+                propValue = default;
                 return false;
             }
-            else if (AllowedIdTypes.Contains(objId.GetType())) {
-                //we will allow some non-string properties if it is trival to convert to a string
-                stringId = objId?.ToString();
-                return true;
-            }
-            else
-            {
-                stringId = default(string);
-                return false;
-            }
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteResourceObjectId(JsonWriter writer, object id, out string writtenId)
-        {
-            if (!WriterUtil.TryConvertIdToString(id, out writtenId))
+            if(!AllowedStringConversions.Contains(prop.PropertyType))
                 throw new JsonApiFormatException(
-                    writer.Path,
-                    $"Expected Id property to be a string or primitive but found it to be '{id?.GetType()}'",
-                    "The values of the id member MUST be a string");
-            writer.WritePropertyName(PropertyNames.Id);
-            writer.WriteValue(writtenId);
-        }
+                   writer.Path,
+                   $"Expected {prop.PropertyName} property to be a string or primitive but found it to be '{prop.PropertyType}'",
+                   $"The values of the {prop.PropertyName} member MUST be a string");
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteResourceObjectType(
-            JsonWriter writer, 
-            string type, 
-            object resourceObject, 
-            SerializationData serializationData, 
-            JsonSerializer serializer,
-            out string writtenType)
-        {
-            writtenType = type ?? WriterUtil.CalculateDefaultJsonApiType(resourceObject, serializationData, serializer);
-            writer.WritePropertyName(PropertyNames.Type);
-            writer.WriteValue(writtenType);
+            var shouldWrite = ShouldWriteProperty(value, prop, serializer, out object objPropValue);
+            propValue = objPropValue as string ?? objPropValue?.ToString();
+            return shouldWrite;
         }
 
         public static bool TryUseCustomConvertor(JsonWriter writer, object value, JsonSerializer serializer, JsonConverter excludeConverter)
