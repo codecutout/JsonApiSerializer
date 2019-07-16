@@ -95,12 +95,15 @@ namespace JsonApiSerializer.JsonConverters
 
             //A "resource identifier object" MUST contain type and id members.
             //serialize id
-            WriterUtil.ShouldWriteProperty(resourceObject, resourceObjectContract.IdProperty, serializer, out object objId);
-            WriterUtil.WriteResourceObjectId(writer, objId, out string id);
+            WriterUtil.ShouldWriteStringProperty(writer, resourceObject, resourceObjectContract.IdProperty, serializer, out string id);
+            writer.WritePropertyName(PropertyNames.Id);
+            writer.WriteValue(id);
 
             //serialize type. Will always out put a type
-            WriterUtil.ShouldWriteProperty(resourceObject, resourceObjectContract.TypeProperty, serializer, out string type);
-            WriterUtil.WriteResourceObjectType(writer, type, resourceObject, serializationData, serializer, out type);
+            WriterUtil.ShouldWriteStringProperty(writer, resourceObject, resourceObjectContract.TypeProperty, serializer, out string type);
+            type = type ?? WriterUtil.CalculateDefaultJsonApiType(resourceObject, serializationData, serializer);
+            writer.WritePropertyName(PropertyNames.Type);
+            writer.WriteValue(type);
 
             //we will only write the object to included if there are properties that have have data
             //that we cant include within the reference
@@ -152,12 +155,15 @@ namespace JsonApiSerializer.JsonConverters
 
             //A "resource identifier object" MUST contain type and id members.
             //serialize id
-            WriterUtil.ShouldWriteProperty(resourceObject, resourceObjectContract.IdProperty, serializer, out object objId);
-            WriterUtil.WriteResourceObjectId(writer, objId, out string id);
+            WriterUtil.ShouldWriteStringProperty(writer, resourceObject, resourceObjectContract.IdProperty, serializer, out string id);
+            writer.WritePropertyName(PropertyNames.Id);
+            writer.WriteValue(id);
 
             //serialize type. Will always out put a type
-            WriterUtil.ShouldWriteProperty(resourceObject, resourceObjectContract.TypeProperty, serializer, out string type);
-            WriterUtil.WriteResourceObjectType(writer, type, resourceObject, serializationData, serializer, out type);
+            WriterUtil.ShouldWriteStringProperty(writer, resourceObject, resourceObjectContract.TypeProperty, serializer, out string type);
+            type = type ?? WriterUtil.CalculateDefaultJsonApiType(resourceObject, serializationData, serializer);
+            writer.WritePropertyName(PropertyNames.Type);
+            writer.WriteValue(type);
 
             for (var i=0; i < resourceIdentifierContract.Properties.Count; i++)
             {

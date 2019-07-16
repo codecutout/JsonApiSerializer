@@ -133,6 +133,55 @@ namespace JsonApiSerializer.Test.SerializationTests
         }
 
         [Fact]
+        public void When_id_null_should_serialize_as_string()
+        {
+            var root = DocumentRoot.Create(new
+            {
+                Id = (int?)null,
+                Type = "articles",
+                Title = "My title",
+                Author = ResourceIdentifier.Create(new
+                {
+                    Id = 7357, //int relationship
+                    Type = "person",
+                    Name = "Scribble McPen"
+                })
+            });
+
+            var json = JsonConvert.SerializeObject(root, new JsonApiSerializerSettings() {
+                NullValueHandling = NullValueHandling.Include,
+                Formatting = Formatting.Indented
+            });
+            var expectedjson = @"{
+              ""data"": {
+                ""id"": null,
+                ""type"": ""articles"",
+                ""attributes"": {
+                  ""title"": ""My title""
+                },
+                ""relationships"": {
+                  ""author"": {
+                    ""data"": {
+                      ""id"": ""7357"",
+                      ""type"": ""person""
+                    }
+                  }
+                }
+              },
+              ""included"": [
+                {
+                  ""id"": ""7357"",
+                  ""type"": ""person"",
+                  ""attributes"": {
+                    ""name"": ""Scribble McPen""
+                  }
+                }
+              ]
+            }";
+            Assert.Equal(expectedjson, json, JsonStringEqualityComparer.Instance);
+        }
+
+        [Fact]
         public void When_id_object_should_throw()
         {
             var root = new DocumentRoot<ArticleWithIdType<Tuple<string,string>>>
@@ -144,7 +193,22 @@ namespace JsonApiSerializer.Test.SerializationTests
                 }
             };
 
-            Assert.Throws<JsonApiFormatException>(() => JsonConvert.SerializeObject(root, settings));
+            var ex = Assert.Throws<JsonApiFormatException>(() => JsonConvert.SerializeObject(root, settings));
+        }
+
+        [Fact]
+        public void When_id_null_object_should_throw()
+        {
+            var root = new DocumentRoot<ArticleWithIdType<Tuple<string, string>>>
+            {
+                Data = new ArticleWithIdType<Tuple<string, string>>
+                {
+                    Id = (Tuple<string, string>)null,
+                    Title = "My title"
+                }
+            };
+
+            var ex = Assert.Throws<JsonApiFormatException>(() => JsonConvert.SerializeObject(root, settings));
         }
 
         [Fact]

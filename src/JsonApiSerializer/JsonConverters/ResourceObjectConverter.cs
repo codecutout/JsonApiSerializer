@@ -169,15 +169,17 @@ namespace JsonApiSerializer.JsonConverters
             writer.WriteStartObject();
 
             //serialize id
-            string id = null;
-            if (WriterUtil.ShouldWriteProperty(value, metadata.IdProperty, serializer, out object objId))
+            if (WriterUtil.ShouldWriteStringProperty(writer, value, metadata.IdProperty, serializer, out string id))
             {
-                WriterUtil.WriteResourceObjectId(writer, objId, out id);
+                writer.WritePropertyName(PropertyNames.Id);
+                writer.WriteValue(id);
             }
 
             //serialize type. Will always out put a type
-            WriterUtil.ShouldWriteProperty<string>(value, metadata.TypeProperty, serializer, out string type);
-            WriterUtil.WriteResourceObjectType(writer, type, value, serializationData, serializer, out type);
+            WriterUtil.ShouldWriteStringProperty(writer, value, metadata.TypeProperty, serializer, out string type);
+            type = type ?? WriterUtil.CalculateDefaultJsonApiType(value, serializationData, serializer);
+            writer.WritePropertyName(PropertyNames.Type);
+            writer.WriteValue(type);
 
             //serialize links
             if (WriterUtil.ShouldWriteProperty(value, metadata.LinksProperty, serializer, out object links))
