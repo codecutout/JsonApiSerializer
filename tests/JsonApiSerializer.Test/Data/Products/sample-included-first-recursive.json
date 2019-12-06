@@ -1,0 +1,62 @@
+﻿{
+  "included": [
+    {
+      "id": "3d29c4a7-2eed-409d-9aa1-a8f5ca7f8f46",
+      "type": "product",
+      "attributes": {
+        "name": "OneProduct",
+        "description": "The first product"
+      },
+      "relationships": {
+        "category": {
+          "data": {
+            "id": "d00572f8-9075-4648-8a8f-e084972dfeaa",
+            "type": "category"
+          }
+        },
+        "sellers": {
+          "data": [
+            {
+              "id": "fa0e66a9-c798-4fd8-ab7b-1087ac5251fb",
+              "type": "seller"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fa0e66a9-c798-4fd8-ab7b-1087ac5251fb",
+      "type": "seller",
+      "attributes": {
+        "name": "OneSeller"
+      },
+      "relationships": {
+        "products": {
+          "data": [
+            {
+              "id": "3d29c4a7-2eed-409d-9aa1-a8f5ca7f8f46",
+              "type": "product"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "data": {
+    "id": "d00572f8-9075-4648-8a8f-e084972dfeaa",
+    "type": "category",
+    "attributes": {
+      "name": "MyCategory"
+    },
+    "relationships": {
+      "products": {
+        "data": [
+          {
+            "id": "3d29c4a7-2eed-409d-9aa1-a8f5ca7f8f46",
+            "type": "product"
+          }
+        ]
+      }
+    }
+  }
+}

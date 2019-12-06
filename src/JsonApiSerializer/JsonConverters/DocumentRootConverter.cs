@@ -9,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace JsonApiSerializer.JsonConverters
 {
@@ -36,50 +38,23 @@ namespace JsonApiSerializer.JsonConverters
             var rootObject = contract.DefaultCreator();
             serializationData.HasProcessedDocumentRoot = true;
 
-            var includedConverter = new IncludedConverter();
+            ReadDataSection(objectType, serializer, contract, rootObject, reader);
+            
+            ReadIncludedSection(serializer, contract, rootObject, reader);
 
-            foreach (var propName in ReaderUtil.IterateProperties(reader))
+            foreach (var propOther in ReaderUtil.IterateProperties(reader))
             {
-                switch (propName)
+                if (!(propOther.Equals(PropertyNames.Data) || propOther.Equals(PropertyNames.Included)))
                 {
-                    case PropertyNames.Data:
-
-                        var documentRootInterfaceType = TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
-                            .Select(x => x.GetTypeInfo())
-                            .FirstOrDefault(x =>
-                                x.IsGenericType
-                                && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
-                        var dataType = documentRootInterfaceType.GenericTypeArguments[0];
-
-                        var dataObj = serializer.Deserialize(reader, dataType);
-                        contract.Properties.GetClosestMatchProperty(PropertyNames.Data).ValueProvider.SetValue(rootObject, dataObj);
-                        break;
-                    case PropertyNames.Included:
-
-                        //if our object has an included property we will do our best to populate it
-                        var property = contract.Properties.GetClosestMatchProperty(propName);
-                        if (ReaderUtil.CanPopulateProperty(property))
-                        {
-                            ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), ((ForkableJsonReader)reader).Fork());
-                        }
-
-                        //still need to read our values so they are updated
-                        foreach (var _ in ReaderUtil.IterateList(reader))
-                        {
-                            includedConverter.ReadJson(reader, typeof(object), null, serializer);
-                        }
-
-                        break;
-                    default:
-                        ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propName), reader);
-                        break;
+                    ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propOther), reader);
                 }
             }
 
-            for(var i=0; i< serializationData.PostProcessingActions.Count;i++)
+            foreach (var postProcessingAction in serializationData.PostProcessingActions)
             {
-                serializationData.PostProcessingActions[i]();
+                postProcessingAction();
             }
+
             serializationData.PostProcessingActions.Clear();
 
             return rootObject;
@@ -251,6 +226,54 @@ namespace JsonApiSerializer.JsonConverters
             dataProp.ValueProvider.SetValue(rootObj, value);
 
             serializer.Serialize(writer, rootObj);
+        }
+
+                private static void ReadIncludedSection(JsonSerializer serializer, JsonObjectContract contract, object rootObject, JsonReader reader)
+        {
+            var includedConverter = new IncludedConverter();
+
+            var includedReader = ((ForkableJsonReader)reader).Fork();
+
+            foreach (var propIncluded in ReaderUtil.IterateProperties(includedReader))
+            {
+                if (!propIncluded.Equals(PropertyNames.Included)) continue;
+                //if our object has an included property we will do our best to populate it
+                var property = contract.Properties.GetClosestMatchProperty(propIncluded);
+                if (ReaderUtil.CanPopulateProperty(property))
+                {
+                    ReaderUtil.TryPopulateProperty(serializer, rootObject, contract.Properties.GetClosestMatchProperty(propIncluded), ((ForkableJsonReader)includedReader).Fork());
+                }
+
+                //still need to read our values so they are updated
+                foreach (var _ in ReaderUtil.IterateList(includedReader))
+                {
+                    includedConverter.ReadJson(includedReader, typeof(object), null, serializer);
+                }
+
+                break;
+            }
+        }
+
+        private static void ReadDataSection(Type objectType, JsonSerializer serializer, JsonObjectContract contract, object rootObject, JsonReader reader)
+        {
+            var dataReader = ((ForkableJsonReader)reader).Fork();
+
+            foreach (var propData in ReaderUtil.IterateProperties(dataReader))
+            {
+                if (propData.Equals(PropertyNames.Data))
+                {
+                    var documentRootInterfaceType = TypeInfoShim.GetInterfaces(objectType.GetTypeInfo())
+                        .Select(x => x.GetTypeInfo())
+                        .FirstOrDefault(x =>
+                            x.IsGenericType
+                            && x.GetGenericTypeDefinition() == typeof(IDocumentRoot<>));
+                    var dataType = documentRootInterfaceType.GenericTypeArguments[0];
+
+                    var dataObj = serializer.Deserialize(dataReader, dataType);
+                    contract.Properties.GetClosestMatchProperty(PropertyNames.Data).ValueProvider.SetValue(rootObject, dataObj);
+                    break;
+                }
+            }
         }
 
         private class MinimalDocumentRoot<TData, TError> : IDocumentRoot<TData> where TError : IError

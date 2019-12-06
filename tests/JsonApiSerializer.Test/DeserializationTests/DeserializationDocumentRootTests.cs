@@ -4,6 +4,7 @@ using JsonApiSerializer.Test.TestUtils;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
+using JsonApiSerializer.Test.Models.Products;
 using Xunit;
 
 namespace JsonApiSerializer.Test.DeserializationTests
@@ -21,6 +22,21 @@ namespace JsonApiSerializer.Test.DeserializationTests
                 new JsonApiSerializerSettings());
 
             AssertArticlesMatchData(articles);
+        }
+
+        [Fact]
+        public void When_included_before_data__with_recursive_references_should_deserialize()
+        {
+            var json = EmbeddedResource.Read("Data.Products.sample-included-first-recursive.json");
+
+            var category = JsonConvert.DeserializeObject<Category>(
+                json,
+                new JsonApiSerializerSettings());
+
+            Assert.NotNull(category);
+            Assert.Equal("MyCategory", category.Name);
+            Assert.Single(category.Products);
+            Assert.Equal("MyCategory", category.Products[0].Category.Name);
         }
 
         [Fact]
