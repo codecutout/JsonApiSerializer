@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Data\Articles\sample-included-first-recursive.json" />
     <None Remove="Data\Articles\sample-with-full-link.json" />
     <None Remove="Data\Articles\sample-with-inherited-types.json" />
     <None Remove="Data\Articles\sample-with-link-null.json" />
@@ -14,6 +15,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Data\Articles\author-comments-null.json" />
+    <EmbeddedResource Include="Data\Products\sample-included-first-recursive.json" />
     <EmbeddedResource Include="Data\Articles\sample-with-full-link.json" />
     <EmbeddedResource Include="Data\Articles\sample-without-included.json" />
     <EmbeddedResource Include="Data\Articles\sample-with-inherited-types.json" />

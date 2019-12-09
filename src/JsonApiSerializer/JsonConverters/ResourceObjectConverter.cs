@@ -71,6 +71,10 @@ namespace JsonApiSerializer.JsonConverters
             existingValue = existingValue ?? CreateObject(objectType, reference.Type, serializer);
 
 
+            //mark this object as a possible include. We need to do this before deserialiazing
+            //the relationship; It could have relationships that reference back to this object
+            serializationData.Included[reference] = existingValue;
+
             JsonContract rawContract = contractResolver.ResolveContract(existingValue.GetType());
             if (!(rawContract is JsonObjectContract contract))
                 throw new JsonApiFormatException(
@@ -133,9 +137,8 @@ namespace JsonApiSerializer.JsonConverters
                 }
             }
 
-            //we have rendered this so we will tag it as included
+            //we have read the object so we will tag it as 'rendered'
             serializationData.RenderedIncluded.Add(reference);
-            serializationData.Included[reference] = existingValue;
 
             serializationData.ConverterStack.Pop();
             return existingValue;
