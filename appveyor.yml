@@ -22,7 +22,7 @@ artifacts:
 deploy:
 - provider: NuGet
   api_key:
-    secure: Y8e8Ii8MaexIajVAG9/HN7l9OayIS14NlQz5322YA3TsI5QUfGjZTMt3Vfrxj9mL
+    secure: 4ZjgOEsyo5zd4gc5jTLZcqf5s/3Ce2Ltmq7LlMNpYqmJ7wgr1Re7SBh8sZTiEBJQ
   on:
     branch: master
 - provider: GitHub
