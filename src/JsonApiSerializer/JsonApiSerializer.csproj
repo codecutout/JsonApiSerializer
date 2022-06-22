@@ -14,6 +14,6 @@
     <PackageReleaseNotes>Fixed issue that would cuase stackoverflow errors when handling circular references when `included` section is present before `data`</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 </Project>
