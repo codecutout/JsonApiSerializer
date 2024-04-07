@@ -175,7 +175,7 @@ namespace JsonApiSerializer.Util
             }
             else if (reader.TokenType == JsonToken.None || reader.TokenType == JsonToken.Null || reader.TokenType == JsonToken.Undefined)
             {
-                //we dont have a value so return empty array
+                //we don't have a value so return empty array
                 yield break;
             }
             else
@@ -260,9 +260,9 @@ namespace JsonApiSerializer.Util
 
         public static object CreateObject(SerializationData serializationData, Type objectType, string jsonApiType, JsonSerializer serializer)
         {
-            // Hack: To keep backward compatability we are not sure what resouceObjectConverter to use
+            // Hack: To keep backward compatability we are not sure what resourceObjectConverter to use
             // we need to check if either one was defined as a serializer, or if one was defined as
-            // furher up the stack (i.e. a member converter)
+            // further up the stack (i.e. a member converter)
 
             for (var i = 0; i < serializer.Converters.Count; i++)
             {

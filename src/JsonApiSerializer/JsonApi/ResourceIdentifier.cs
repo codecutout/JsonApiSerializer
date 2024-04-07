@@ -8,7 +8,7 @@ namespace JsonApiSerializer.JsonApi
         /// <summary>
         /// Creates a Relationship for a given type.
         /// </summary>
-        /// <typeparam name="TData">The type of the data.</typeparam>
+        /// <typeparam name="TResourceObject">The type of the data.</typeparam>
         public static ResourceIdentifier<TResourceObject> Create<TResourceObject>(TResourceObject resourceObject)
         {
             return new ResourceIdentifier<TResourceObject>

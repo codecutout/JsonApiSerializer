@@ -54,7 +54,7 @@ namespace JsonApiSerializer.Util
             if (!IsList(listType, out elementType))
                 throw new ArgumentException($"{nameof(listType)} must be a list. {nameof(listType)} was {listType}", nameof(listType));
 
-            //if we are an array we need to create wtih Array.CreateInstance
+            //if we are an array we need to create with Array.CreateInstance
             if (listType.IsArray)
             {
                 var elementList = elements.ToArray();

@@ -31,7 +31,7 @@ namespace JsonApiSerializer.ContractResolvers.Contracts
             ItemReferenceLoopHandling = jsonObjectContract.ItemReferenceLoopHandling;
             ItemTypeNameHandling = jsonObjectContract.ItemTypeNameHandling;
 
-            //poulate JsonContract fields
+            //populate JsonContract fields
             CreatedType = jsonObjectContract.CreatedType;
             IsReference = jsonObjectContract.IsReference;
             Converter = jsonObjectContract.Converter;
