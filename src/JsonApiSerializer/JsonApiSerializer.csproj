@@ -1,19 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.0;netstandard1.5;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard1.0;net45;net6.0;netstandard2.0</TargetFrameworks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.7.4</Version>
+    <Version>1.8.0</Version>
     <Authors>Alex Davies</Authors>
     <Company>Codecutout</Company>
     <Description>JsonApiSerializer supports configurationless serializing and deserializing objects into the json:api format (http://jsonapi.org).</Description>
     <PackageLicense>MIT</PackageLicense>
     <PackageProjectUrl>https://github.com/codecutout/JsonApiSerializer</PackageProjectUrl>
     <PackageTags>jsonapiserializer jsonapi json:api json.net serialization deserialization jsonapi.net</PackageTags>
-    <AssemblyVersion>1.7.4.0</AssemblyVersion>
-    <FileVersion>1.7.4.0</FileVersion>
-    <PackageReleaseNotes>Fixed issue that would cuase stackoverflow errors when handling circular references when `included` section is present before `data`</PackageReleaseNotes>
+    <AssemblyVersion>1.8.0.0</AssemblyVersion>
+    <FileVersion>1.8.0.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 </Project>
