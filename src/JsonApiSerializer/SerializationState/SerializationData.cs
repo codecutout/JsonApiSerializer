@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using JsonApiSerializer.Util.JsonApiConverter.Util;
 using System;
-using Newtonsoft.Json.Linq;
 
 namespace JsonApiSerializer.SerializationState
 {

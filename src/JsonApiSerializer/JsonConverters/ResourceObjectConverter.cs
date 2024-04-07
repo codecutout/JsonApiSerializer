@@ -1,19 +1,14 @@
 ﻿using JsonApiSerializer.ContractResolvers;
 using JsonApiSerializer.ContractResolvers.Contracts;
 using JsonApiSerializer.Exceptions;
-using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonApi.WellKnown;
-using JsonApiSerializer.JsonConverters;
 using JsonApiSerializer.SerializationState;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters

@@ -1,11 +1,4 @@
-﻿using JsonApiSerializer.JsonApi;
-using JsonApiSerializer.JsonApi.WellKnown;
-using JsonApiSerializer.JsonConverters;
-using Newtonsoft.Json.Serialization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Newtonsoft.Json.Serialization;
 
 namespace JsonApiSerializer.ContractResolvers.Contracts
 {
