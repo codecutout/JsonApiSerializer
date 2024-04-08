@@ -141,9 +141,9 @@ namespace JsonApiSerializer.Util
             {
                 propValue = overrideConverter.ReadJson(value, property.PropertyType, null, serializer);
             }
-            else if (property.MemberConverter != null && property.MemberConverter.CanRead)
+            else if (property.Converter != null && property.Converter.CanRead)
             {
-                propValue = property.MemberConverter.ReadJson(value, property.PropertyType, null, serializer);
+                propValue = property.Converter.ReadJson(value, property.PropertyType, null, serializer);
             }
             else
             {
