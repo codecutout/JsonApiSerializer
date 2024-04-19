@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.SerializationState;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
@@ -23,7 +22,7 @@ namespace JsonApiSerializer.JsonConverters
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            //we may be starting the deserialization here, if thats the case we need to resolve this object as the root
+            //we may be starting the deserialization here, if that's the case we need to resolve this object as the root
             var serializationData = SerializationData.GetSerializationData(reader);
             if (!serializationData.HasProcessedDocumentRoot)
             {

@@ -1,11 +1,4 @@
-﻿using JsonApiSerializer.JsonApi;
-using JsonApiSerializer.JsonApi.WellKnown;
-using JsonApiSerializer.JsonConverters;
-using Newtonsoft.Json.Serialization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Newtonsoft.Json.Serialization;
 
 namespace JsonApiSerializer.ContractResolvers.Contracts
 {
@@ -31,7 +24,7 @@ namespace JsonApiSerializer.ContractResolvers.Contracts
             ItemReferenceLoopHandling = jsonObjectContract.ItemReferenceLoopHandling;
             ItemTypeNameHandling = jsonObjectContract.ItemTypeNameHandling;
 
-            //poulate JsonContract fields
+            //populate JsonContract fields
             CreatedType = jsonObjectContract.CreatedType;
             IsReference = jsonObjectContract.IsReference;
             Converter = jsonObjectContract.Converter;

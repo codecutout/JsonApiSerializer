@@ -21,7 +21,7 @@ namespace JsonApiSerializer.JsonConverters
             
             if (!serializationData.Included.TryGetValue(reference, out var existingObject))
             {
-                //we dont know what type this object should be so we will just save it as a JObject
+                //we don't know what type this object should be so we will just save it as a JObject
                 var unknownObject = serializer.Deserialize<JObject>(forkableReader);
                 serializationData.Included.Add(reference, unknownObject);
                 return unknownObject;

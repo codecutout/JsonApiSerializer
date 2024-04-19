@@ -1,16 +1,12 @@
 ﻿using JsonApiSerializer.ContractResolvers;
 using JsonApiSerializer.ContractResolvers.Contracts;
 using JsonApiSerializer.Exceptions;
-using JsonApiSerializer.JsonApi;
 using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
@@ -102,7 +98,7 @@ namespace JsonApiSerializer.JsonConverters
         public void WriteNullableJson(JsonWriter writer, Type declaredType, object value, JsonSerializer serializer)
         {
             // WriteJson should NEVER be passed a null a value, 
-            // so we will handle nulls seperately here
+            // so we will handle nulls separately here
             if(value == null)
             {
                 writer.WriteStartObject();
@@ -121,7 +117,7 @@ namespace JsonApiSerializer.JsonConverters
         {
             var contract = serializer.ContractResolver.ResolveContract(declaredType);
 
-            //if its a null relationship, we want to know what hte data field was
+            //if its a null relationship, we want to know what the data field was
             if (contract is ResourceRelationshipContract rrc)
                 contract = serializer.ContractResolver.ResolveContract(rrc.DataProperty.PropertyType);
             
@@ -144,7 +140,7 @@ namespace JsonApiSerializer.JsonConverters
             var jsonApiContractResolver = (JsonApiContractResolver)serializer.ContractResolver;
             var contract = jsonApiContractResolver.ResolveContract(objectType);
 
-            // we be a ResourceObject rather than a RelationshpObject
+            // we want it to be a ResourceObject rather than a RelationshipObject
             // if so we will just read the data property of the resource object
             if (!(contract is ResourceRelationshipContract rrc))
             {

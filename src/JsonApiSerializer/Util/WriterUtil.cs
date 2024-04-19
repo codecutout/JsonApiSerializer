@@ -1,7 +1,6 @@
 ﻿using JsonApiSerializer.ContractResolvers;
 using JsonApiSerializer.ContractResolvers.Contracts;
 using JsonApiSerializer.Exceptions;
-using JsonApiSerializer.JsonApi.WellKnown;
 using JsonApiSerializer.JsonConverters;
 using JsonApiSerializer.SerializationState;
 using Newtonsoft.Json;
@@ -9,7 +8,6 @@ using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.Util
 {
@@ -92,9 +90,9 @@ namespace JsonApiSerializer.Util
 
         private static string CalculateDefaultJsonApiTypeFromObjectType(Type objectType, SerializationData serializationData, JsonSerializer serializer)
         {
-            // Hack: To keep backward compatability we are not sure what resouceObjectConverter to use
+            // Hack: To keep backward compatability we are not sure what resourceObjectConverter to use
             // we need to check if either one was defined as a serializer, or if one was defined as
-            // furher up the stack (i.e. a member converter)
+            // further up the stack (i.e. a member converter)
 
             for (var i = 0; i < serializer.Converters.Count; i++)
             {

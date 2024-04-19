@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace JsonApiSerializer.JsonConverters
 {
@@ -73,7 +72,7 @@ namespace JsonApiSerializer.JsonConverters
                     throw new JsonApiFormatException(
                        writer.Path,
                        $"Expected to find a resource identifier or resource object, but found '{value}'",
-                       "Resource indentifier objects MUST contain 'id' members");
+                       "Resource identifier objects MUST contain 'id' members");
             }
            
         }
@@ -214,7 +213,7 @@ namespace JsonApiSerializer.JsonConverters
                     throw new JsonApiFormatException(
                        forkableReader.FullPath,
                        $"Expected to find a resource identifier or resource object, but found '{objectType}'",
-                       "Resource indentifier objects MUST contain 'id' members");
+                       "Resource identifier objects MUST contain 'id' members");
             }
         }
 
@@ -250,7 +249,7 @@ namespace JsonApiSerializer.JsonConverters
                        serializer);
 
             //we will only set the resource object if we have rendered the included
-            //value somehwere, if we have not it means the value was actaully provided
+            //value somewhere, if we have not it means the value was actually provided
             var valueProvider = resourceIdentifierContract.ResourceObjectProperty.ValueProvider;
             serializationData.PostProcessingActions.Add(() =>
             {

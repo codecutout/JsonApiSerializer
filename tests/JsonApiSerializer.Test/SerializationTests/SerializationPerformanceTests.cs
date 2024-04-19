@@ -39,8 +39,8 @@ namespace JsonApiSerializer.Test.SerializationTests
             var jsonString = JsonConvert.SerializeObject(json, new JsonSerializerSettings() { Formatting = Formatting.Indented });
             Assert.Equal(jsonApiString, jsonString, JsonStringEqualityComparer.InstanceIgnoreArrayOrder);
 
-            var jsonIterations = CountIterations(testTime / 2, json, new JsonSerializerSettings());
-            var jsonApiIterations = CountIterations(testTime / 2, jsonApi, new JsonApiSerializerSettings());
+            var jsonIterations = CountIterations(testTime, json, new JsonSerializerSettings());
+            var jsonApiIterations = CountIterations(testTime, jsonApi, new JsonApiSerializerSettings());
 
             output.WriteLine($"Json performed {jsonIterations} serializations in {testTime.TotalSeconds}s");
             output.WriteLine($"JsonApi performed {jsonApiIterations} serializations in {testTime.TotalSeconds}s");

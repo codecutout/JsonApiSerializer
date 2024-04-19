@@ -27,8 +27,8 @@ namespace JsonApiSerializer.Test.DeserializationTests
 
             var json = EmbeddedResource.Read("Data.Articles.sample-with-full-link.json");
 
-            var jsonIterations = CountIterations<DocumentRootVanillaJson<List<ArticleVanillaJson>>>(testTime / 2, json, new JsonSerializerSettings());
-            var jsonApiIterations = CountIterations<List<Article>>(testTime / 2, json, new JsonApiSerializerSettings());
+            var jsonIterations = CountIterations<DocumentRootVanillaJson<List<ArticleVanillaJson>>>(testTime, json, new JsonSerializerSettings());
+            var jsonApiIterations = CountIterations<List<Article>>(testTime, json, new JsonApiSerializerSettings());
 
             output.WriteLine($"Json performed {jsonIterations} deserializations in {testTime.TotalSeconds}s");
             output.WriteLine($"JsonApi performed {jsonApiIterations} deserializations in {testTime.TotalSeconds}s");
