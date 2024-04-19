@@ -63,7 +63,9 @@ namespace JsonApiSerializer.Test.DeserializationTests
 }
 ";
             var settings = new JsonApiSerializerSettings();
-            var localOffset = new DateTimeOffset(new DateTime(0), TimeZoneInfo.Local.BaseUtcOffset).ToString("zzz");
+
+            var dt = DateTime.Parse("2017-01-01T12:00:00");
+            var localOffset = new DateTimeOffset(dt, TimeZoneInfo.Local.GetUtcOffset(dt)).ToString("zzz");
 
             var dateTimes = JsonConvert.DeserializeObject<DateTimes>(json, settings);
 

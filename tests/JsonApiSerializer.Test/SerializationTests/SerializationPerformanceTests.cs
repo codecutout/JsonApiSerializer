@@ -39,8 +39,8 @@ namespace JsonApiSerializer.Test.SerializationTests
             var jsonString = JsonConvert.SerializeObject(json, new JsonSerializerSettings() { Formatting = Formatting.Indented });
             Assert.Equal(jsonApiString, jsonString, JsonStringEqualityComparer.InstanceIgnoreArrayOrder);
 
-            var jsonIterations = CountIterations(testTime.TotalMilliseconds / 2, json, new JsonSerializerSettings());
-            var jsonApiIterations = CountIterations(testTime.TotalMilliseconds / 2, jsonApi, new JsonApiSerializerSettings());
+            var jsonIterations = CountIterations(testTime, json, new JsonSerializerSettings());
+            var jsonApiIterations = CountIterations(testTime, jsonApi, new JsonApiSerializerSettings());
 
             output.WriteLine($"Json performed {jsonIterations} serializations in {testTime.TotalSeconds}s");
             output.WriteLine($"JsonApi performed {jsonApiIterations} serializations in {testTime.TotalSeconds}s");
@@ -59,7 +59,7 @@ namespace JsonApiSerializer.Test.SerializationTests
             return DocumentRoot.Create(fixture.CreateMany<Article>(listSize).ToList());
         }
 
-        public static int CountIterations(double timeout, object objToSerialize, JsonSerializerSettings settings)
+        public static int CountIterations(TimeSpan timeout, object objToSerialize, JsonSerializerSettings settings)
         {
             var sw = new Stopwatch();
             int iterations = 0;
@@ -68,7 +68,7 @@ namespace JsonApiSerializer.Test.SerializationTests
             {
                 GC.Collect();
                 sw.Start();
-                while(sw.ElapsedMilliseconds < timeout)
+                while(sw.Elapsed < timeout)
                 {
                     //JsonConvert.SerializeObject(objToSerialize, settings);
 
