@@ -3,15 +3,15 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>7.3</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.9.0</Version>
+    <Version>2.0.0</Version>
     <Authors>Alex Davies</Authors>
     <Company>Codecutout</Company>
     <Description>JsonApiSerializer supports configurationless serializing and deserializing objects into the json:api format (http://jsonapi.org).</Description>
     <PackageLicense>MIT</PackageLicense>
     <PackageProjectUrl>https://github.com/codecutout/JsonApiSerializer</PackageProjectUrl>
     <PackageTags>jsonapiserializer jsonapi json:api json.net serialization deserialization jsonapi.net</PackageTags>
-    <AssemblyVersion>1.9.0.0</AssemblyVersion>
-    <FileVersion>1.9.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
