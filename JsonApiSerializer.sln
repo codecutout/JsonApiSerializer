@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2027
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonApiSerializer", "src\JsonApiSerializer\JsonApiSerializer.csproj", "{3CFAD26B-A705-4180-A210-E0B7BBDF6404}"
 EndProject
@@ -13,8 +13,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{32D2F3FF
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution", "solution", "{52EDA15C-678C-4F6B-A58B-2FF9F26B5B84}"
 	ProjectSection(SolutionItems) = preProject
-		appveyor.yml = appveyor.yml
 		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "..github", "..github", "{9E69D917-8AB1-422F-B77B-E682948AC69D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{E399B66E-1B80-43A9-8322-320D7421E9D6}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\release.yaml = .github\workflows\release.yaml
+		.github\workflows\test.yaml = .github\workflows\test.yaml
 	EndProjectSection
 EndProject
 Global
@@ -38,6 +45,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3CFAD26B-A705-4180-A210-E0B7BBDF6404} = {2CC10E19-7EEE-4E16-8473-89BB78642787}
 		{ACED8723-0D2D-40E1-9E92-C0E755A60F3A} = {32D2F3FF-275C-4CD1-ABBE-9D3865DFC297}
+		{E399B66E-1B80-43A9-8322-320D7421E9D6} = {9E69D917-8AB1-422F-B77B-E682948AC69D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {74E57F44-FD27-494F-ADFF-973B551D31B0}

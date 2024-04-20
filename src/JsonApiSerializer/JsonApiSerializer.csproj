@@ -3,16 +3,21 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>7.3</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>2.0.0</Version>
     <Authors>Alex Davies</Authors>
     <Company>Codecutout</Company>
     <Description>JsonApiSerializer supports configurationless serializing and deserializing objects into the json:api format (http://jsonapi.org).</Description>
     <PackageLicense>MIT</PackageLicense>
     <PackageProjectUrl>https://github.com/codecutout/JsonApiSerializer</PackageProjectUrl>
     <PackageTags>jsonapiserializer jsonapi json:api json.net serialization deserialization jsonapi.net</PackageTags>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <FileVersion>2.0.0.0</FileVersion>
+	<PublishRepositoryUrl>true</PublishRepositoryUrl>
+	<IncludeSymbols>true</IncludeSymbols>
+	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
   </PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+		<PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1" PrivateAssets="All" />
+	</ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
