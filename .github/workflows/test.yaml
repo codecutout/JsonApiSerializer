@@ -22,9 +22,15 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.*
+    - name: Install dotnet-validate
+      run: dotnet tool install --global dotnet-validate --version 0.0.1-preview.304
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build -p:ContinuousIntegrationBuild=true --configuration Release --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --configuration Release --no-build --verbosity normal
+    - name: Pack
+      run: dotnet pack --output ./artifacts --no-build
+    - name: Validate NuGet package
+      run: dotnet-validate package local artifacts/*.nupkg

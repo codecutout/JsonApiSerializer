@@ -17,6 +17,6 @@ jobs:
       with:
         dotnet-version: 8.0.*
     - name: Pack
-      run: dotnet pack --output ./artifacts --configuration Release -p:GeneratePackageOnBuild=false -p:Version=$RELEASE_VERSION
+      run: dotnet pack --output ./artifacts --configuration Release -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:Version=$RELEASE_VERSION
     - name: Publish packages
       run: dotnet nuget push ./artifacts/**.nupkg --source nuget.org --api-key ${{secrets.NUGET_TOKEN}}
